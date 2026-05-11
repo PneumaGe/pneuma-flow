@@ -1,0 +1,20 @@
+/// Local Mapbox Configuration Template
+/// 
+/// SETUP INSTRUCTIONS:
+/// 1. Copy this file to 'mapbox_config_local.dart' (without .example)
+/// 2. Add your actual Mapbox tokens below
+/// 3. The mapbox_config_local.dart file is gitignored and won't be committed
+///
+/// For production builds, use --dart-define instead:
+///   flutter build apk --dart-define=MAPBOX_ACCESS_TOKEN=pk.your_token_here
+///
+/// Get your tokens from: https://account.mapbox.com/access-tokens/
+
+class MapboxConfigLocal {
+  /// Your Mapbox public token (starts with 'pk.')
+  static const String accessToken = 'pk.your_public_token_here';
+  
+  /// Your Mapbox secret/downloads token (starts with 'sk.')
+  /// Only needed for downloading SDK dependencies
+  static const String downloadsToken = 'sk.your_secret_token_here';
+}

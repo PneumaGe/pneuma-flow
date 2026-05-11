@@ -1,0 +1,27 @@
+/// Mapbox API Configuration Template
+/// 
+/// INSTRUCTIONS:
+/// 1. Copy this file to 'mapbox_config.dart' in the same directory
+/// 2. Replace 'YOUR_MAPBOX_PUBLIC_TOKEN_HERE' with your actual Mapbox public token
+/// 3. Never commit mapbox_config.dart to version control!
+/// 
+/// To get your tokens:
+/// 1. Go to https://account.mapbox.com/
+/// 2. Navigate to Access Tokens
+/// 3. Create a new public token with these scopes:
+///    - styles:tiles
+///    - styles:read
+///    - fonts:read
+///    - downloads:read
+/// 4. Copy the token and paste it below
+
+class MapboxConfig {
+  static const String accessToken = 'YOUR_MAPBOX_PUBLIC_TOKEN_HERE';
+  static const String? secretToken = null;
+  static const String defaultStyleUrl = 'mapbox://styles/mapbox/satellite-streets-v12';
+  static const double initialLatitude = 39.8283;
+  static const double initialLongitude = -98.5795;
+  static const double initialZoom = 4.0;
+  static const int maxOfflineTileCacheSize = 500 * 1024 * 1024;
+  static const int tileDownloadConcurrency = 4;
+}
