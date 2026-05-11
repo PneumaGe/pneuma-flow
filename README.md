@@ -402,6 +402,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 If you use PneumaGe in your research, please cite:
 ```
 PneumaGe: Open-Source Gas Flux Measurement Software
-https://github.com/[your-username]/pneumage-app
+https://github.com/PneumaGe/pneuma-flow
 ```
-_(Update with proper citation once published)_
