@@ -14,118 +14,6 @@ A Flutter mobile application for researchers and scientists to measure soil-gas 
   <img src="assets/screenshot-export.png" alt="Export Screen" width="250"/>
 </p>
 
-## Project Status
-
-### ✅ Implemented
-- **State Management**: Riverpod architecture for global app state
-  - Flutter Riverpod 2.6.1 integration
-  - Provider-based dependency injection (no manual service instantiation)
-  - Automatic lifecycle management (services disposed when app closes)
-  - Reactive UI updates via `ref.watch()` (no manual StreamSubscriptions)
-  - Navigation-safe: no dispose() errors during screen transitions
-- **BLE Service**: Complete Bluetooth Low Energy communication service
-  - Device scanning and connection management
-  - Binary protocol parsers for all characteristics
-  - MTU negotiation (247 bytes achieved on typical devices)
-  - Chunked notification pattern for large data transfers (device info: 937 bytes)
-  - Automatic heartbeat mechanism (15s interval, fire-and-forget pattern)
-  - Real-time data streams (CO2, battery, chamber stats, system status)
-  - Robust error handling and connection cleanup
-  - StreamController lifecycle management (prevents post-disposal exceptions)
-- **Data Service**: Repository pattern for data ownership and stream management
-  - Separates BLE transport layer from data ownership
-  - Caches all sensor values (battery, chamber temp/pressure/humidity, connection state)
-  - Re-broadcasts BLE streams for UI consumption
-  - Provides instant access via getters (no async delays)
-  - Proper lifecycle with clear() and dispose() methods
-- **GPS Service**: Location tracking and quality monitoring
-  - Real-time GPS position updates using geolocator package
-  - Reactive GPS state monitoring - automatically starts/stops when GPS is enabled/disabled
-  - Accuracy-based quality indicator (0-3): Excellent/Good/Fair/Poor
-  - Automatic permission management (iOS/Android)
-  - Streams position, quality, and enabled state via Riverpod providers
-  - GPS indicator: gray when disabled, color-coded when enabled (green/amber/orange/red by accuracy)
-- **Device Info Streaming**: Large JSON descriptor transfer via BLE notifications
-  - Arduino streams device info in 20-byte chunks with 15ms delay
-  - App uses `onValueReceived` stream to capture all packets without drops
-  - Auto-detection of complete JSON (937 characters)
-  - Device info cached in DataService and available immediately after connection
-- **Branding**: PneumaGe logo implementation
-  - Reusable `PneumageLogo` widget with Montserrat font (Google Fonts)
-  - Two-tone color scheme: "Pneuma" (#9CA3AF, weight 500) + "Ge" (#1F4E5F, weight 700)
-  - Size variants (large 24px, small 12px) with optional glow effects
-  - Logo displayed in status bar (top-left corner)
-- **Scan/Connect Screen**: Device discovery and connection UI
-  - Auto-scanning with 30-second timeout
-  - Bluetooth state monitoring with user guidance
-  - Device list with connection controls
-  - Error handling and retry mechanisms
-  - Device info validation with 5-second timeout
-- **Home Screen**: Main application interface
-  - Live status bar with real-time sensor data (battery, GPS, chamber/air temp/pressure, BLE status)
-  - All status bar indicators fully wired via Riverpod providers
-  - Back navigation with disconnect handling
-  - Panel system (Files, Stats, Info, Settings, Time Series, Histogram)
-- **Info Panel**: Device information display (fully wired)
-  - Shows device name, sensor info, processor info, firmware version
-  - Reads from DataService with proper null safety
-  - Updates immediately after connection
-- **Settings Service**: Complete settings persistence and management
-  - SettingsService with load/save for app and device settings
-  - App settings: units preference (Metric/Imperial)
-  - Device settings: pump speed (LOW/MEDIUM/HIGH), channel visibility
-  - Settings panel with tabbed interface (App/Device tabs)
-  - Per-device settings persist using device ID as key
-  - Settings providers for reactive access across the app
-- **Pump Control**: Fully integrated pump button with BLE commands ✅ COMPLETE
-  - UI toggle button in right sidebar (green=on, red=off)
-  - Reads pump speed setting (LOW/MEDIUM/HIGH) from device settings
-  - Sends appropriate BLE command (0x10/0x11/0x12) when enabled
-  - Sends stop command (0x00) when disabled
-  - Error handling with user feedback via snackbar
-  - Settings adjustable in Settings panel → Device tab
-- **Project Management**: Complete local storage and UI integration ✅ COMPLETE
-  - ProjectService with JSON-based local storage (projects.json + individual measurement files)
-  - Project providers for reactive state management (projectsProvider, currentProjectProvider, projectsNotifierProvider)
-  - Current project selection persisted via SharedPreferences
-  - Files Panel fully wired to real data (removed placeholder projects)
-  - Visual feedback for active project: green dot + [ACTIVE] badge + bold text
-  - Inline project creation form (solves mobile keyboard obstruction)
-  - Separate tap targets: project name sets active, arrow expands/collapses
-  - Files Panel sized at 50% of center area
-  - Record button guard: prevents recording without active project, auto-opens Files Panel
-- **Recording System**: Complete data recording workflow ✅ COMPLETE
-  - Record button wired to BLE START_MEASUREMENT (0x01) and STOP_ALL (0x00) commands
-  - Automatic pump control: starts pump at configured speed when recording begins
-  - 1Hz sample collection from all sensors (CO2, battery, chamber temp/pressure/humidity)
-  - GPS buffer integration: 30-second window with median position calculation
-  - GPS fallback strategy: buffer median → current position → 0.0/0.0 (prioritizes data over location)
-  - Per-project file counter: generates filenames like PG_001, PG_002, etc.
-  - Guard dialogs: prevents accidental stop during recording (Record stop + Pump toggle)
-  - User feedback: GPS quality status shown after recording (excellent/good/fair/poor/unavailable)
-  - Files Panel auto-refresh: measurements appear immediately after recording stops
-- **Export System**: Multi-project data export with OS sharing ✅ COMPLETE
-  - Export Panel UI: project selection with checkboxes, format picker (JSON/CSV/ZIP)
-  - Multi-project support: export multiple projects in one operation
-  - Format options: JSON (array of projects), CSV (concatenated with headers), ZIP (project archive)
-  - File naming: `pneumage_export_{timestamp}.zip` (e.g., pneumage_export_20260218_143052.zip)
-  - Download location: Downloads folder by default (Android external storage, iOS documents)
-  - Archived project handling: placeholder with TODOs for cloud fetch (backend not ready)
-  - Share integration: uses OS share sheet via share_plus package
-  - Export service: complete implementation with JSON/CSV/ZIP support via archive package
-  - Real data integration: wired to projectsProvider and ProjectService
-- **Data Models**: Complete data structures for User, Project, Measurement, Sample, DeviceInfo, etc.
-- **Services**: Project local storage, settings persistence, data export (JSON/CSV/ZIP), Firebase sync (implemented)
-- **Platform Configuration**: Landscape-only mode (enforced at all levels), immersive fullscreen, landscape splash screen, BLE + Location permissions (iOS/Android)
-
-### 🚧 In Progress
-- Real-time time series and histogram plotting
-
-### 📋 To Do
-- Map integration for measurement locations
-- Device descriptor caching strategy
-- Additional statistics calculations
-
 ## Getting Started
 
 ### Prerequisites
@@ -261,6 +149,118 @@ Device Info stream complete.
 - Serial Monitor will show: "[HEARTBEAT] Timeout: System auto-shutdown"
 - This protects the experiment if the app crashes
 - Normal operation shows heartbeat every 15s
+
+## Project Status
+
+### ✅ Implemented
+- **State Management**: Riverpod architecture for global app state
+  - Flutter Riverpod 2.6.1 integration
+  - Provider-based dependency injection (no manual service instantiation)
+  - Automatic lifecycle management (services disposed when app closes)
+  - Reactive UI updates via `ref.watch()` (no manual StreamSubscriptions)
+  - Navigation-safe: no dispose() errors during screen transitions
+- **BLE Service**: Complete Bluetooth Low Energy communication service
+  - Device scanning and connection management
+  - Binary protocol parsers for all characteristics
+  - MTU negotiation (247 bytes achieved on typical devices)
+  - Chunked notification pattern for large data transfers (device info: 937 bytes)
+  - Automatic heartbeat mechanism (15s interval, fire-and-forget pattern)
+  - Real-time data streams (CO2, battery, chamber stats, system status)
+  - Robust error handling and connection cleanup
+  - StreamController lifecycle management (prevents post-disposal exceptions)
+- **Data Service**: Repository pattern for data ownership and stream management
+  - Separates BLE transport layer from data ownership
+  - Caches all sensor values (battery, chamber temp/pressure/humidity, connection state)
+  - Re-broadcasts BLE streams for UI consumption
+  - Provides instant access via getters (no async delays)
+  - Proper lifecycle with clear() and dispose() methods
+- **GPS Service**: Location tracking and quality monitoring
+  - Real-time GPS position updates using geolocator package
+  - Reactive GPS state monitoring - automatically starts/stops when GPS is enabled/disabled
+  - Accuracy-based quality indicator (0-3): Excellent/Good/Fair/Poor
+  - Automatic permission management (iOS/Android)
+  - Streams position, quality, and enabled state via Riverpod providers
+  - GPS indicator: gray when disabled, color-coded when enabled (green/amber/orange/red by accuracy)
+- **Device Info Streaming**: Large JSON descriptor transfer via BLE notifications
+  - Arduino streams device info in 20-byte chunks with 15ms delay
+  - App uses `onValueReceived` stream to capture all packets without drops
+  - Auto-detection of complete JSON (937 characters)
+  - Device info cached in DataService and available immediately after connection
+- **Branding**: PneumaGe logo implementation
+  - Reusable `PneumageLogo` widget with Montserrat font (Google Fonts)
+  - Two-tone color scheme: "Pneuma" (#9CA3AF, weight 500) + "Ge" (#1F4E5F, weight 700)
+  - Size variants (large 24px, small 12px) with optional glow effects
+  - Logo displayed in status bar (top-left corner)
+- **Scan/Connect Screen**: Device discovery and connection UI
+  - Auto-scanning with 30-second timeout
+  - Bluetooth state monitoring with user guidance
+  - Device list with connection controls
+  - Error handling and retry mechanisms
+  - Device info validation with 5-second timeout
+- **Home Screen**: Main application interface
+  - Live status bar with real-time sensor data (battery, GPS, chamber/air temp/pressure, BLE status)
+  - All status bar indicators fully wired via Riverpod providers
+  - Back navigation with disconnect handling
+  - Panel system (Files, Stats, Info, Settings, Time Series, Histogram)
+- **Info Panel**: Device information display (fully wired)
+  - Shows device name, sensor info, processor info, firmware version
+  - Reads from DataService with proper null safety
+  - Updates immediately after connection
+- **Settings Service**: Complete settings persistence and management
+  - SettingsService with load/save for app and device settings
+  - App settings: units preference (Metric/Imperial)
+  - Device settings: pump speed (LOW/MEDIUM/HIGH), channel visibility
+  - Settings panel with tabbed interface (App/Device tabs)
+  - Per-device settings persist using device ID as key
+  - Settings providers for reactive access across the app
+- **Pump Control**: Fully integrated pump button with BLE commands ✅ COMPLETE
+  - UI toggle button in right sidebar (green=on, red=off)
+  - Reads pump speed setting (LOW/MEDIUM/HIGH) from device settings
+  - Sends appropriate BLE command (0x10/0x11/0x12) when enabled
+  - Sends stop command (0x00) when disabled
+  - Error handling with user feedback via snackbar
+  - Settings adjustable in Settings panel → Device tab
+- **Project Management**: Complete local storage and UI integration ✅ COMPLETE
+  - ProjectService with JSON-based local storage (projects.json + individual measurement files)
+  - Project providers for reactive state management (projectsProvider, currentProjectProvider, projectsNotifierProvider)
+  - Current project selection persisted via SharedPreferences
+  - Files Panel fully wired to real data (removed placeholder projects)
+  - Visual feedback for active project: green dot + [ACTIVE] badge + bold text
+  - Inline project creation form (solves mobile keyboard obstruction)
+  - Separate tap targets: project name sets active, arrow expands/collapses
+  - Files Panel sized at 50% of center area
+  - Record button guard: prevents recording without active project, auto-opens Files Panel
+- **Recording System**: Complete data recording workflow ✅ COMPLETE
+  - Record button wired to BLE START_MEASUREMENT (0x01) and STOP_ALL (0x00) commands
+  - Automatic pump control: starts pump at configured speed when recording begins
+  - 1Hz sample collection from all sensors (CO2, battery, chamber temp/pressure/humidity)
+  - GPS buffer integration: 30-second window with median position calculation
+  - GPS fallback strategy: buffer median → current position → 0.0/0.0 (prioritizes data over location)
+  - Per-project file counter: generates filenames like PG_001, PG_002, etc.
+  - Guard dialogs: prevents accidental stop during recording (Record stop + Pump toggle)
+  - User feedback: GPS quality status shown after recording (excellent/good/fair/poor/unavailable)
+  - Files Panel auto-refresh: measurements appear immediately after recording stops
+- **Export System**: Multi-project data export with OS sharing ✅ COMPLETE
+  - Export Panel UI: project selection with checkboxes, format picker (JSON/CSV/ZIP)
+  - Multi-project support: export multiple projects in one operation
+  - Format options: JSON (array of projects), CSV (concatenated with headers), ZIP (project archive)
+  - File naming: `pneumage_export_{timestamp}.zip` (e.g., pneumage_export_20260218_143052.zip)
+  - Download location: Downloads folder by default (Android external storage, iOS documents)
+  - Archived project handling: placeholder with TODOs for cloud fetch (backend not ready)
+  - Share integration: uses OS share sheet via share_plus package
+  - Export service: complete implementation with JSON/CSV/ZIP support via archive package
+  - Real data integration: wired to projectsProvider and ProjectService
+- **Data Models**: Complete data structures for User, Project, Measurement, Sample, DeviceInfo, etc.
+- **Services**: Project local storage, settings persistence, data export (JSON/CSV/ZIP), Firebase sync (implemented)
+- **Platform Configuration**: Landscape-only mode (enforced at all levels), immersive fullscreen, landscape splash screen, BLE + Location permissions (iOS/Android)
+
+### 🚧 In Progress
+- Real-time time series and histogram plotting
+
+### 📋 To Do
+- Map integration for measurement locations
+- Device descriptor caching strategy
+- Additional statistics calculations
 
 ## Architecture
 
