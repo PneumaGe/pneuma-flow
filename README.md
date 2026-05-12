@@ -1,6 +1,18 @@
 # PneumaGe App
 
+<p align="center">
+  <img src="assets/logo.png" alt="PneumaGe Logo" width="300"/>
+</p>
+
 A Flutter mobile application for researchers and scientists to measure soil-gas emissions and estimate flux using an accumulation chamber device connected via Bluetooth Low Energy.
+
+## Screenshots
+
+<p align="center">
+  <img src="assets/screenshot-home.png" alt="Home Screen" width="250"/>
+  <img src="assets/screenshot-recording.png" alt="Recording Screen" width="250"/>
+  <img src="assets/screenshot-export.png" alt="Export Screen" width="250"/>
+</p>
 
 ## Project Status
 
