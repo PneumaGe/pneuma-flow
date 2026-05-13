@@ -141,8 +141,13 @@ class GpsService {
         desiredAccuracy: LocationAccuracy.high,
       );
       print('[GPS] Initial position: ${_currentPosition!.latitude}, ${_currentPosition!.longitude} (±${_currentPosition!.accuracy}m)');
-      _positionController.add(_currentPosition!);
-      _qualityController.add(quality);
+      
+      if (!_positionController.isClosed) {
+        _positionController.add(_currentPosition!);
+      }
+      if (!_qualityController.isClosed) {
+        _qualityController.add(quality);
+      }
     } catch (e) {
       print('[GPS] Error getting initial position: $e');
     }

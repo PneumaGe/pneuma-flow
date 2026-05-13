@@ -41,12 +41,23 @@ class InteractiveMapWidget extends ConsumerStatefulWidget {
 class _InteractiveMapWidgetState extends ConsumerState<InteractiveMapWidget> {
   MapboxMap? _mapboxMap;
   PointAnnotationManager? _annotationManager;
+  bool _hasCenteredOnGps = false; // Track if we've already centered on user position
   // Note: No longer need manual marker - using Mapbox location component instead
 
   @override
   Widget build(BuildContext context) {
     // Watch GPS position for GPS accuracy indicator display
     final currentPosition = ref.watch(currentPositionProvider);
+
+    // Listen to GPS position changes and center map on first valid position
+    ref.listen<AsyncValue<geo.Position>>(gpsPositionProvider, (previous, next) {
+      next.whenData((position) {
+        if (!_hasCenteredOnGps && _mapboxMap != null) {
+          _centerOnUserPosition(position);
+          _hasCenteredOnGps = true;
+        }
+      });
+    });
 
     // Note: Mapbox location component automatically updates the location puck
     // No need to manually update markers - the built-in component handles it
@@ -121,6 +132,36 @@ class _InteractiveMapWidgetState extends ConsumerState<InteractiveMapWidget> {
 
     // Load measurement markers from all projects
     await _loadMeasurementMarkers();
+
+    // Center on user position if GPS is already available
+    final currentPosition = ref.read(currentPositionProvider);
+    if (currentPosition != null && !_hasCenteredOnGps) {
+      _centerOnUserPosition(currentPosition);
+      _hasCenteredOnGps = true;
+    }
+  }
+
+  /// Center the map camera on the user's current position
+  void _centerOnUserPosition(geo.Position position) {
+    if (_mapboxMap == null) return;
+
+    final point = Point(
+      coordinates: Position(
+        position.longitude,
+        position.latitude,
+      ),
+    );
+
+    // Animate camera to user position with a nice zoom level
+    _mapboxMap!.flyTo(
+      CameraOptions(
+        center: point,
+        zoom: 15.0, // Zoomed in for better detail
+      ),
+      MapAnimationOptions(duration: 1500), // Smooth 1.5s animation
+    );
+
+    print('[Map] Centered on user position: ${position.latitude}, ${position.longitude}');
   }
 
   // DEPRECATED: Manual marker approach replaced by Mapbox location component

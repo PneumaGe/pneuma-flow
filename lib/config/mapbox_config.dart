@@ -30,9 +30,9 @@
 /// - Public token (pk.*) - for map display
 /// - Secret token (sk.*) - for downloading SDK dependencies (Android gradle)
 
-// Try to import local config (ignored by git)
-// ignore: uri_does_not_exist
-import 'mapbox_config_local.dart' if (dart.library.io) 'mapbox_config_stub.dart';
+// Import local config (ignored by git)
+// Falls back to stub only on web platform
+import 'mapbox_config_local.dart' if (dart.library.html) 'mapbox_config_stub.dart';
 
 class MapboxConfig {
   /// Public access token for map display and tile downloads
