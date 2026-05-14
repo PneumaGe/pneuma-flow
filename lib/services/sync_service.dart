@@ -59,7 +59,7 @@ class SyncService {
   /// Returns an updated [Project] with [SyncStatus.synced].
   Future<Project> syncProject(
     Project project,
-    List<Measurement> measurements,
+    List<PneumaGeRecord> measurements,
   ) async {
     // Upload project metadata (without local-only fields)
     final projectData = project.toJson()
@@ -79,23 +79,33 @@ class SyncService {
     );
   }
 
-  /// Upload a single measurement: metadata to Firestore, samples to Storage.
+  /// Upload a single measurement: metadata to Firestore, full data to Storage.
   Future<void> _syncMeasurement(
     String projectId,
-    Measurement measurement,
+    PneumaGeRecord measurement,
   ) async {
-    // Measurement metadata (without the samples array)
-    final metaData = measurement.toJson()..remove('samples');
+    // Lightweight metadata to Firestore (without sample arrays)
+    final metaData = {
+      'record_uuid': measurement.recordUuid,
+      'version': measurement.version,
+      'project_id': measurement.projectId,
+      'cycle_id': measurement.measurementCycle.cycleId,
+      'timestamp_start': measurement.startTime.toIso8601String(),
+      'coordinates': {
+        'lat': measurement.latitude,
+        'lon': measurement.longitude,
+        'elevation_m': measurement.elevation,
+      },
+      'channels': measurement.measurementCycle.channels.map((ch) => ch.targetGas).toList(),
+    };
     await _measurementsCol(projectId)
         .doc(measurement.id)
         .set(metaData);
 
-    // Bulk sample data to Cloud Storage
-    final samplesJson = jsonEncode(
-      measurement.samples.map((s) => s.toJson()).toList(),
-    );
+    // Full record data to Cloud Storage (includes all samples)
+    final fullDataJson = jsonEncode(measurement.toJson());
     await _samplesBucket(projectId, measurement.id)
-        .putString(samplesJson, format: PutStringFormat.raw);
+        .putString(fullDataJson, format: PutStringFormat.raw);
   }
 
   // ---------------------------------------------------------------------------
@@ -105,7 +115,7 @@ class SyncService {
   /// Download a project and all its measurements from the cloud.
   ///
   /// Returns the project (with [SyncStatus.synced]) and its measurements.
-  Future<({Project project, List<Measurement> measurements})> restoreProject(
+  Future<({Project project, List<PneumaGeRecord> measurements})> restoreProject(
     String projectId,
   ) async {
     // Fetch project metadata
@@ -122,19 +132,16 @@ class SyncService {
     final measurementDocs =
         await _measurementsCol(projectId).get();
 
-    // Concurrently fetch all measurement samples from Cloud Storage.
+    // Concurrently fetch all full measurement data from Cloud Storage.
     final measurementFutures = measurementDocs.docs.map((doc) async {
-      final meta = doc.data();
-
-      // Download samples from Cloud Storage
-      final samplesData =
+      // Download full record from Cloud Storage
+      final fullData =
           await _samplesBucket(projectId, doc.id).getData();
-      if (samplesData == null) {
-        // Or handle this case more gracefully depending on requirements
-        throw StateError('Sample data not found for measurement ${doc.id}');
+      if (fullData == null) {
+        throw StateError('Measurement data not found for measurement ${doc.id}');
       }
-      meta['samples'] = jsonDecode(utf8.decode(samplesData));
-      return Measurement.fromJson(meta);
+      final recordJson = jsonDecode(utf8.decode(fullData));
+      return PneumaGeRecord.fromJson(recordJson);
     });
     final measurements = await Future.wait(measurementFutures);
 

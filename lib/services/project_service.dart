@@ -33,7 +33,7 @@ class ProjectService {
 
   // Hive box getters
   Box<Project> get _projectsBox => Hive.box<Project>('projects');
-  Box<Measurement> get _measurementsBox => Hive.box<Measurement>('measurements');
+  Box<PneumaGeRecord> get _measurementsBox => Hive.box<PneumaGeRecord>('measurements');
   Box get _settingsBox => Hive.box('settings');
 
   /// Initialize the service (run migration if needed)
@@ -156,13 +156,13 @@ class ProjectService {
               try {
                 final content = await file.readAsString();
                 final json = jsonDecode(content) as Map<String, dynamic>;
-                final jsonMeasurement = Measurement.fromJson(json);
+                final jsonMeasurement = PneumaGeRecord.fromJson(json);
                 final hiveMeasurement = _measurementsBox.get(jsonMeasurement.id);
                 
                 if (hiveMeasurement == null) {
                   print('[CONSISTENCY ERROR] Measurement ${jsonMeasurement.id} exists in JSON but not in Hive');
                   measurementErrors++;
-                } else if (jsonMeasurement.samples.length != hiveMeasurement.samples.length) {
+                } else if (jsonMeasurement.sampleCount != hiveMeasurement.sampleCount) {
                   print('[CONSISTENCY ERROR] Measurement ${jsonMeasurement.id} sample count mismatch');
                   measurementErrors++;
                 }
@@ -339,7 +339,7 @@ class ProjectService {
 
   /// Load all measurements for a project
   /// Phase 3: Read from Hive (dual-write continues as backup)
-  Future<List<Measurement>> loadMeasurements(String projectId) async {
+  Future<List<PneumaGeRecord>> loadMeasurements(String projectId) async {
     try {
       // Query Hive box - filter by projectId
       return _measurementsBox.values
@@ -353,7 +353,7 @@ class ProjectService {
 
   /// Load a single measurement by ID
   /// Returns null if measurement not found
-  Future<Measurement?> getMeasurement(String measurementId) async {
+  Future<PneumaGeRecord?> getMeasurement(String measurementId) async {
     try {
       return _measurementsBox.get(measurementId);
     } catch (e) {
@@ -364,7 +364,7 @@ class ProjectService {
 
   /// Save a measurement to local storage
   /// Phase 4: Hive-only (JSON removed)
-  Future<void> saveMeasurement(Measurement measurement) async {
+  Future<void> saveMeasurement(PneumaGeRecord measurement) async {
     try {
       // Write to Hive box
       await _measurementsBox.put(measurement.id, measurement);
@@ -390,7 +390,7 @@ class ProjectService {
 
   /// Update an existing measurement (e.g., for fit boundaries, notes)
   /// Phase 4: Hive-only
-  Future<void> updateMeasurement(Measurement measurement) async {
+  Future<void> updateMeasurement(PneumaGeRecord measurement) async {
     try {
       // Verify measurement exists
       final existing = _measurementsBox.get(measurement.id);

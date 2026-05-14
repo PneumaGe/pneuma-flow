@@ -45,10 +45,22 @@ void main() async {
   // Register type adapters
   Hive.registerAdapter(ProjectAdapter());
   Hive.registerAdapter(SyncStatusAdapter());
-  Hive.registerAdapter(MeasurementAdapter());
-  Hive.registerAdapter(MeasurementStatsAdapter());
-  Hive.registerAdapter(SampleAdapter());
-  Hive.registerAdapter(GpsLocationAdapter());
+  
+  // PneumaGe Master Schema v1.9.0 adapters
+  Hive.registerAdapter(PneumaGeRecordAdapter());
+  Hive.registerAdapter(ProvenanceAdapter());
+  Hive.registerAdapter(SensorPayloadAdapter());
+  Hive.registerAdapter(SiteContextAdapter());
+  Hive.registerAdapter(CoordinatesAdapter());
+  Hive.registerAdapter(EnvironmentalDataAdapter());
+  Hive.registerAdapter(DomainSpecificsAdapter());
+  Hive.registerAdapter(MeasurementCycleAdapter());
+  Hive.registerAdapter(SystemVitalsAdapter());
+  Hive.registerAdapter(FluxChannelAdapter());
+  Hive.registerAdapter(CalibrationDataAdapter());
+  Hive.registerAdapter(ChannelDataAdapter());
+  Hive.registerAdapter(CalculatedFluxAdapter());
+  
   Hive.registerAdapter(AppSettingsAdapter());
   Hive.registerAdapter(DeviceSettingsAdapter());
   Hive.registerAdapter(FilterConfigAdapter());
@@ -57,7 +69,7 @@ void main() async {
   
   // Open boxes (Phase 1: boxes exist but not used yet)
   await Hive.openBox<Project>('projects');
-  await Hive.openBox<Measurement>('measurements');
+  await Hive.openBox<PneumaGeRecord>('measurements');
   await Hive.openBox('settings');
   
   SystemChrome.setPreferredOrientations([

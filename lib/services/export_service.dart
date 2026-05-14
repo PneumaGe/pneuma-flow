@@ -29,7 +29,7 @@ class ExportService {
   // ---------------------------------------------------------------------------
 
   /// Export a single measurement as a JSON string.
-  String measurementToJson(Measurement measurement) {
+  String measurementToJson(PneumaGeRecord measurement) {
     const encoder = JsonEncoder.withIndent('  ');
     return encoder.convert(measurement.toJson());
   }
@@ -38,7 +38,7 @@ class ExportService {
   ///
   /// Header comment block contains metadata, followed by a standard CSV table
   /// with timestamp and one column per channel.
-  String measurementToCsv(Measurement measurement) {
+  String measurementToCsv(PneumaGeRecord measurement, {bool useFiltered = true}) {
     final buf = StringBuffer();
 
     // Metadata header
@@ -46,23 +46,21 @@ class ExportService {
     buf.writeln('# project_id: ${measurement.projectId}');
     buf.writeln('# device_id: ${measurement.deviceId}');
     buf.writeln(
-      '# location: ${measurement.location.latitude}, '
-      '${measurement.location.longitude}',
+      '# location: ${measurement.latitude}, '
+      '${measurement.longitude}',
     );
-    if (measurement.location.altitude != null) {
-      buf.writeln('# altitude: ${measurement.location.altitude}');
-    }
+    buf.writeln('# altitude: ${measurement.elevation}');
     buf.writeln('# start_time: ${measurement.startTime.toIso8601String()}');
     if (measurement.endTime != null) {
       buf.writeln('# end_time: ${measurement.endTime!.toIso8601String()}');
     }
-    if (measurement.notes != null) {
-      buf.writeln('# notes: ${measurement.notes}');
-    }
 
+    // Get samples using compatibility layer
+    final samples = measurement.getSamples(useFiltered: useFiltered);
+    
     // Collect all channel IDs across samples to build consistent columns
     final channelIds = <String>{};
-    for (final sample in measurement.samples) {
+    for (final sample in samples) {
       channelIds.addAll(sample.channelValues.keys);
     }
     final sortedChannels = channelIds.toList()..sort();
@@ -71,7 +69,7 @@ class ExportService {
     buf.writeln(['timestamp', ...sortedChannels].join(','));
 
     // Data rows
-    for (final sample in measurement.samples) {
+    for (final sample in samples) {
       final row = [
         sample.timestamp.toIso8601String(),
         ...sortedChannels.map(
@@ -89,7 +87,7 @@ class ExportService {
   // ---------------------------------------------------------------------------
 
   /// Export all measurements in a project as a single concatenated JSON array.
-  String projectToJson(Project project, List<Measurement> measurements) {
+  String projectToJson(Project project, List<PneumaGeRecord> measurements) {
     const encoder = JsonEncoder.withIndent('  ');
     return encoder.convert({
       'project': project.toJson(),
@@ -101,7 +99,7 @@ class ExportService {
   ///
   /// Adds a `measurement_id` column to distinguish rows from different
   /// measurements.
-  String projectToCsv(Project project, List<Measurement> measurements) {
+  String projectToCsv(Project project, List<PneumaGeRecord> measurements, {bool useFiltered = true}) {
     final buf = StringBuffer();
 
     // Project metadata header
@@ -113,7 +111,8 @@ class ExportService {
     // Collect all channel IDs across all measurements
     final channelIds = <String>{};
     for (final m in measurements) {
-      for (final sample in m.samples) {
+      final samples = m.getSamples(useFiltered: useFiltered);
+      for (final sample in samples) {
         channelIds.addAll(sample.channelValues.keys);
       }
     }
@@ -122,9 +121,10 @@ class ExportService {
     // CSV header row with measurement_id prefix
     buf.writeln(['measurement_id', 'timestamp', ...sortedChannels].join(','));
 
-    // Data rows
+    // Data rows from all measurements
     for (final m in measurements) {
-      for (final sample in m.samples) {
+      final samples = m.getSamples(useFiltered: useFiltered);
+      for (final sample in samples) {
         final row = [
           m.id,
           sample.timestamp.toIso8601String(),
@@ -149,7 +149,7 @@ class ExportService {
   /// Returns the path to the generated ZIP file.
   Future<String> projectToZip(
     Project project,
-    List<Measurement> measurements,
+    List<PneumaGeRecord> measurements,
   ) async {
     final archive = Archive();
 

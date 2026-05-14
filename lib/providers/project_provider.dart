@@ -48,7 +48,7 @@ final currentProjectProvider = FutureProvider<Project?>((ref) async {
 
 /// Provider for measurements of a specific project
 /// Family provider - takes projectId as parameter
-final projectMeasurementsProvider = FutureProvider.family<List<Measurement>, String>(
+final projectMeasurementsProvider = FutureProvider.family<List<PneumaGeRecord>, String>(
   (ref, projectId) async {
     final service = ref.watch(projectServiceProvider);
     return await service.loadMeasurements(projectId);
@@ -168,7 +168,7 @@ final selectedMeasurementIdProvider = StateProvider<String?>((ref) => null);
 
 /// Provider for the selected measurement data (with all samples)
 /// Automatically loads when selectedMeasurementIdProvider changes
-final selectedMeasurementProvider = FutureProvider<Measurement?>((ref) async {
+final selectedMeasurementProvider = FutureProvider<PneumaGeRecord?>((ref) async {
   final measurementId = ref.watch(selectedMeasurementIdProvider);
   
   if (measurementId == null) {

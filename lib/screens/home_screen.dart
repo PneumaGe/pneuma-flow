@@ -308,24 +308,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Generate measurement ID using filename format
       final measurementId = projectService.getNextMeasurementFilename(currentProject);
       
-      // Create GpsLocation
-      final location = GpsLocation(
+      // Create PneumaGeRecord using factory
+      var measurement = PneumaGeRecordFactory.createLiveMeasurement(
+        projectId: currentProject.id,
+        operatorId: 'default_operator', // TODO: Get from user profile
+        systemId: dataService.deviceInfo?.deviceId ?? 'unknown',
         latitude: gpsPosition?.latitude ?? 0.0,
         longitude: gpsPosition?.longitude ?? 0.0,
-        altitude: gpsPosition?.altitude,
-        quality: gpsPosition != null ? _calculateGpsQuality(gpsPosition.accuracy) : 0,
+        elevation: gpsPosition?.altitude ?? 0.0,
+        deviceId: dataService.deviceInfo?.deviceId ?? 'unknown',
+        channelNames: ['CO2', 'CH4'], // TODO: Get from device info
       );
       
-      // Create Measurement object
-      final measurement = Measurement(
-        id: measurementId,
-        projectId: currentProject.id,
-        location: location,
-        startTime: _recordingStartTime!,
-        endTime: DateTime.now(),
-        deviceId: dataService.deviceInfo?.deviceId ?? 'unknown',
-        samples: _currentSamples,
+      // Update with proper ID and timestamps
+      measurement = PneumaGeRecord(
+        version: measurement.version,
+        recordUuid: measurementId,
+        provenance: measurement.provenance,
+        siteContext: measurement.siteContext,
+        measurementCycle: MeasurementCycle(
+          cycleId: measurementId,
+          timestampStart: _recordingStartTime!,
+          chamberVolumeM3: measurement.measurementCycle.chamberVolumeM3,
+          systemVolumeM3: measurement.measurementCycle.systemVolumeM3,
+          systemVitals: measurement.measurementCycle.systemVitals,
+          channels: measurement.measurementCycle.channels,
+        ),
       );
+      
+      // Add all collected samples
+      for (final sample in _currentSamples) {
+        measurement = PneumaGeRecordFactory.addSample(
+          measurement,
+          sample.timestamp,
+          sample.channelValues,
+          useFiltered: true, // Use filtered if filters are enabled
+        );
+      }
       
       // Save measurement
       await projectService.saveMeasurement(measurement);
@@ -369,14 +388,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _recordingStartTime = null;
       });
     }
-  }
-
-  /// Calculate GPS quality indicator (0-3) based on accuracy
-  int _calculateGpsQuality(double accuracy) {
-    if (accuracy < 10) return 3;  // Excellent
-    if (accuracy < 50) return 2;  // Good
-    if (accuracy < 100) return 1; // Fair
-    return 0; // Poor
   }
 
   /// Show confirmation dialog before stopping recording

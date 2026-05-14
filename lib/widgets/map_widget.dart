@@ -233,16 +233,14 @@ class _InteractiveMapWidgetState extends ConsumerState<InteractiveMapWidget> {
   }
 
   /// Add markers for a list of measurements
-  Future<void> _addMeasurementMarkers(List<Measurement> measurements) async {
+  Future<void> _addMeasurementMarkers(List<PneumaGeRecord> measurements) async {
     if (_annotationManager == null) return;
 
     for (final measurement in measurements) {
-      final location = measurement.location;
-
       final point = Point(
         coordinates: Position(
-          location.longitude,
-          location.latitude,
+          measurement.longitude,
+          measurement.latitude,
         ),
       );
 

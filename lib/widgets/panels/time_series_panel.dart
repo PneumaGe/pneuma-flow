@@ -163,32 +163,16 @@ class _TimeSeriesPanelState extends ConsumerState<TimeSeriesPanel> {
   }
 
   /// Extract data points from a measurement's samples for the selected channel
-  List<DataPoint> _getHistoricalData(Measurement measurement, String channel) {
-    // Map channel names to sample data keys
-    final channelKey = _getChannelKey(channel);
+  List<DataPoint> _getHistoricalData(PneumaGeRecord measurement, String channel) {
+    // Use compatibility layer to get samples
+    final samples = measurement.getSamples(useFiltered: true);
     
-    return measurement.samples
-        .where((sample) => sample.channelValues.containsKey(channelKey))
-        .map((sample) => DataPoint(sample.timestamp, sample.channelValues[channelKey]!))
+    return samples
+        .where((sample) => sample.channelValues.containsKey(channel))
+        .map((sample) => DataPoint(sample.timestamp, sample.channelValues[channel]!))
         .toList();
   }
   
-  /// Map UI channel names to data keys
-  String _getChannelKey(String channel) {
-    switch (channel) {
-      case 'CO2':
-        return 'co2';
-      case 'CH4':
-        return 'ch4';
-      case 'Temperature':
-        return 'chamber_temp';
-      case 'Pressure':
-        return 'chamber_pressure';
-      default:
-        return channel.toLowerCase();
-    }
-  }
-
   // Boundary dragging state
   String? _draggingBoundary; // 'start' or 'end' or null
   
@@ -257,15 +241,25 @@ class _TimeSeriesPanelState extends ConsumerState<TimeSeriesPanel> {
   }
   
   /// Save the current boundary values to the measurement
+  /// Save fit boundaries for a specific channel to the measurement
   Future<void> _saveBoundariesToMeasurement(
-    Measurement measurement,
+    PneumaGeRecord measurement,
     String channel,
     int startIdx,
     int endIdx,
   ) async {
     try {
       final projectService = ref.read(projectServiceProvider);
-      final updatedMeasurement = measurement.setFitBoundaries(channel, startIdx, endIdx);
+      // Use factory helper to update channel stats
+      final stats = MeasurementStats(
+        flux: 0.0,
+        fluxError: 0.0,
+        rSquared: 0.0,
+        slope: 0.0,
+        inlierCount: endIdx - startIdx,
+      );
+      final updatedMeasurement = PneumaGeRecordFactory.updateChannelStats(
+        measurement, channel, startIdx, endIdx, stats);
       await projectService.updateMeasurement(updatedMeasurement);
       // Invalidate the measurement provider to reflect changes
       ref.invalidate(selectedMeasurementProvider);
@@ -276,7 +270,7 @@ class _TimeSeriesPanelState extends ConsumerState<TimeSeriesPanel> {
 
   /// Save statistics for a specific channel to the measurement
   Future<void> _saveStatisticsToMeasurement(
-    Measurement measurement,
+    PneumaGeRecord measurement,
     String channel,
     FluxResult result,
   ) async {
@@ -289,7 +283,10 @@ class _TimeSeriesPanelState extends ConsumerState<TimeSeriesPanel> {
         slope: result.slope,
         inlierCount: result.inlierCount,
       );
-      final updatedMeasurement = measurement.setStatistics(channel, stats);
+      // Get saved boundaries to pass along
+      final bounds = measurement.getFitBoundaries(channel) ?? [0, 0];
+      final updatedMeasurement = PneumaGeRecordFactory.updateChannelStats(
+        measurement, channel, bounds[0], bounds[1], stats);
       await projectService.updateMeasurement(updatedMeasurement);
       // Invalidate the measurement provider to reflect changes
       ref.invalidate(selectedMeasurementProvider);

@@ -125,7 +125,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
       final projectService = ref.read(projectServiceProvider);
       final exportService = ref.read(exportServiceProvider);
 
-      final projectsWithMeasurements = <Project, List<Measurement>>{};
+      final projectsWithMeasurements = <Project, List<PneumaGeRecord>>{};
       
       for (final project in selectedProjects) {
         final measurements = await projectService.loadMeasurements(project.id);
@@ -200,7 +200,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
   }
 
   Future<String> _exportMultiProjectZip(
-    Map<Project, List<Measurement>> projectsWithMeasurements,
+    Map<Project, List<PneumaGeRecord>> projectsWithMeasurements,
     String dirPath,
     String filename,
     ExportService exportService,
@@ -239,7 +239,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
   }
 
   Future<String> _exportMultiProjectFile(
-    Map<Project, List<Measurement>> projectsWithMeasurements,
+    Map<Project, List<PneumaGeRecord>> projectsWithMeasurements,
     String dirPath,
     String filename,
     ExportService exportService,
@@ -330,7 +330,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
       final projectService = ref.read(projectServiceProvider);
       final exportService = ref.read(exportServiceProvider);
 
-      final projectsWithMeasurements = <Project, List<Measurement>>{};
+      final projectsWithMeasurements = <Project, List<PneumaGeRecord>>{};
       
       for (final project in selectedProjects) {
         final measurements = await projectService.loadMeasurements(project.id);
