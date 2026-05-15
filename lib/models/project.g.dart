@@ -27,13 +27,16 @@ class ProjectAdapter extends TypeAdapter<Project> {
       measurementIds: (fields[7] as List).cast<String>(),
       syncStatus: fields[8] as SyncStatus,
       lastSyncedAt: fields[9] as DateTime?,
+      domain: fields[10] == null ? 'NONE' : fields[10] as String,
+      domainMetadata:
+          fields[11] == null ? {} : (fields[11] as Map).cast<String, dynamic>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Project obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +56,11 @@ class ProjectAdapter extends TypeAdapter<Project> {
       ..writeByte(8)
       ..write(obj.syncStatus)
       ..writeByte(9)
-      ..write(obj.lastSyncedAt);
+      ..write(obj.lastSyncedAt)
+      ..writeByte(10)
+      ..write(obj.domain)
+      ..writeByte(11)
+      ..write(obj.domainMetadata);
   }
 
   @override

@@ -53,6 +53,10 @@ class Project {
   final SyncStatus syncStatus;
   @HiveField(9)
   final DateTime? lastSyncedAt;
+  @HiveField(10, defaultValue: 'NONE')
+  final String domain; // 'NONE', 'AGRICULTURE', 'ARCTIC', 'MARITIME', 'VOLCANOLOGY'
+  @HiveField(11, defaultValue: {})
+  final Map<String, dynamic> domainMetadata; // Domain-specific configuration
 
   const Project({
     required this.id,
@@ -65,6 +69,8 @@ class Project {
     this.measurementIds = const [],
     this.syncStatus = SyncStatus.local,
     this.lastSyncedAt,
+    this.domain = 'NONE',
+    this.domainMetadata = const {},
   });
 
   Project copyWith({
@@ -75,6 +81,8 @@ class Project {
     List<String>? measurementIds,
     SyncStatus? syncStatus,
     DateTime? lastSyncedAt,
+    String? domain,
+    Map<String, dynamic>? domainMetadata,
   }) => Project(
     id: id,
     name: name ?? this.name,
@@ -86,6 +94,8 @@ class Project {
     measurementIds: measurementIds ?? this.measurementIds,
     syncStatus: syncStatus ?? this.syncStatus,
     lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+    domain: domain ?? this.domain,
+    domainMetadata: domainMetadata ?? this.domainMetadata,
   );
 
   Map<String, dynamic> toJson() => {
@@ -100,6 +110,8 @@ class Project {
     'syncStatus': syncStatus.name,
     if (lastSyncedAt != null)
       'lastSyncedAt': lastSyncedAt!.toIso8601String(),
+    'domain': domain,
+    'domainMetadata': domainMetadata,
   };
 
   factory Project.fromJson(Map<String, dynamic> json) => Project(
@@ -119,5 +131,7 @@ class Project {
     lastSyncedAt: json['lastSyncedAt'] != null
         ? DateTime.parse(json['lastSyncedAt'] as String)
         : null,
+    domain: json['domain'] as String? ?? 'NONE',
+    domainMetadata: (json['domainMetadata'] as Map<String, dynamic>?) ?? {},
   );
 }

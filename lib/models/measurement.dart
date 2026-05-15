@@ -844,9 +844,18 @@ class PneumaGeRecordFactory {
     double elevation = 0.0,
     String? deviceId,
     List<String> channelNames = const ['CO2', 'CH4'],
+    String? activeDomain,
+    Map<String, dynamic>? domainMetadata,
   }) {
     final now = DateTime.now();
     final recordUuid = '${projectId}_${now.millisecondsSinceEpoch}';
+
+    // Determine active domain and populate appropriate domain map
+    final domain = activeDomain ?? 'NONE';
+    final agriculture = (domain == 'AGRICULTURE' && domainMetadata != null) ? domainMetadata : <String, dynamic>{};
+    final arctic = (domain == 'ARCTIC' && domainMetadata != null) ? domainMetadata : <String, dynamic>{};
+    final maritime = (domain == 'MARITIME' && domainMetadata != null) ? domainMetadata : <String, dynamic>{};
+    final volcanology = (domain == 'VOLCANOLOGY' && domainMetadata != null) ? domainMetadata : <String, dynamic>{};
 
     return PneumaGeRecord(
       version: '1.9.0',
@@ -862,7 +871,7 @@ class PneumaGeRecordFactory {
         sensorPayload: [],
       ),
       siteContext: SiteContext(
-        activeDomain: 'Agriculture',
+        activeDomain: domain,
         standardsCompliance: [],
         coordinates: Coordinates(
           lat: latitude,
@@ -875,10 +884,10 @@ class PneumaGeRecordFactory {
           relativeHumidityPct: 50.0,
         ),
         domainSpecifics: DomainSpecifics(
-          agriculture: {},
-          arctic: {},
-          maritime: {},
-          volcanology: {},
+          agriculture: agriculture,
+          arctic: arctic,
+          maritime: maritime,
+          volcanology: volcanology,
         ),
       ),
       measurementCycle: MeasurementCycle(

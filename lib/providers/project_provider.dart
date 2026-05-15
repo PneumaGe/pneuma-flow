@@ -79,12 +79,16 @@ class ProjectsNotifier extends StateNotifier<AsyncValue<List<Project>>> {
     required String name,
     required String ownerId,
     String filenamePrefix = 'PG',
+    String domain = 'NONE',
+    Map<String, dynamic> domainMetadata = const {},
   }) async {
     try {
       final project = await _service.createProject(
         name: name,
         ownerId: ownerId,
         filenamePrefix: filenamePrefix,
+        domain: domain,
+        domainMetadata: domainMetadata,
       );
 
       // Set as current project

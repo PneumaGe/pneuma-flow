@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../models/project.dart';
 import '../../providers/project_provider.dart';
+import '../../config/domain_config.dart';
 
 // Import selectedMeasurementIdProvider for measurement selection
 // (imported from project_provider.dart above)
@@ -524,13 +525,26 @@ class _CreateProjectBottomSheet extends StatefulWidget {
 class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
   final _nameController = TextEditingController();
   final _prefixController = TextEditingController(text: 'PG');
+  String _selectedDomain = DomainConfig.none;
+  final Map<String, TextEditingController> _domainFieldControllers = {};
   bool _isCreating = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _prefixController.dispose();
+    for (var controller in _domainFieldControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  /// Get or create a text controller for a domain field
+  TextEditingController _getFieldController(String key) {
+    if (!_domainFieldControllers.containsKey(key)) {
+      _domainFieldControllers[key] = TextEditingController();
+    }
+    return _domainFieldControllers[key]!;
   }
 
   @override
@@ -549,11 +563,13 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
     
+    final domainFields = DomainConfig.getFieldsForDomain(_selectedDomain);
+    
     return Padding(
       padding: EdgeInsets.only(bottom: keyboardHeight),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.5,
+          maxHeight: screenHeight * 0.7,
         ),
         clipBehavior: Clip.hardEdge,
         decoration: BoxDecoration(
@@ -576,6 +592,8 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
               ),
             ),
             const SizedBox(height: 10),
+            
+            // Project Name
             Text('Project Name', style: labelStyle),
             const SizedBox(height: 3),
             TextField(
@@ -608,14 +626,15 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
               ),
             ),
             const SizedBox(height: 8),
+            
+            // Filename Prefix
             Text('Filename Prefix', style: labelStyle),
             const SizedBox(height: 3),
             TextField(
               controller: _prefixController,
               enabled: !_isCreating,
               style: valueStyle,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _handleCreateProject(),
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -639,6 +658,113 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+            
+            // Domain Type Dropdown
+            Text('Domain Type', style: labelStyle),
+            const SizedBox(height: 3),
+            DropdownButtonFormField<String>(
+              value: _selectedDomain,
+              onChanged: _isCreating ? null : (value) {
+                setState(() {
+                  _selectedDomain = value ?? DomainConfig.none;
+                });
+              },
+              style: valueStyle,
+              dropdownColor: AppTheme.surface,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                border: OutlineInputBorder(
+                  borderSide: const BorderSide(color: AppTheme.divider),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: AppTheme.divider),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: AppTheme.accent, width: 2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              items: DomainConfig.allDomains.map((domain) {
+                return DropdownMenuItem<String>(
+                  value: domain,
+                  child: Text(
+                    DomainConfig.domainDisplayNames[domain] ?? domain,
+                    style: valueStyle,
+                  ),
+                );
+              }).toList(),
+            ),
+            
+            // Domain-specific fields
+            if (domainFields.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'DOMAIN METADATA',
+                style: TextStyle(
+                  fontFamily: 'RobotoMono',
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textSecondary,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...domainFields.map((field) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(field.label, style: labelStyle),
+                      if (field.required)
+                        Text(
+                          ' *',
+                          style: TextStyle(
+                            fontFamily: 'RobotoMono',
+                            fontSize: 9,
+                            color: AppTheme.danger,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  TextField(
+                    controller: _getFieldController(field.key),
+                    enabled: !_isCreating,
+                    style: valueStyle,
+                    keyboardType: field.isNumeric ? TextInputType.number : TextInputType.text,
+                    textInputAction: TextInputAction.next,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderSide: const BorderSide(color: AppTheme.divider),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: AppTheme.divider),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: AppTheme.accent, width: 2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      hintText: field.hint,
+                      hintStyle: TextStyle(
+                        fontFamily: 'RobotoMono',
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              )).toList(),
+            ],
+            
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -706,6 +832,48 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
       return;
     }
 
+    // Validate required domain fields
+    final domainFields = DomainConfig.getFieldsForDomain(_selectedDomain);
+    for (final field in domainFields) {
+      if (field.required) {
+        final value = _domainFieldControllers[field.key]?.text.trim() ?? '';
+        if (value.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${field.label} is required'),
+              backgroundColor: AppTheme.danger,
+            ),
+          );
+          return;
+        }
+      }
+    }
+
+    // Collect domain metadata
+    final domainMetadata = <String, dynamic>{};
+    for (final field in domainFields) {
+      final value = _domainFieldControllers[field.key]?.text.trim() ?? '';
+      if (value.isNotEmpty) {
+        // Parse numeric values
+        if (field.isNumeric) {
+          final numValue = double.tryParse(value);
+          if (numValue != null) {
+            domainMetadata[field.key] = numValue;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${field.label} must be a number'),
+                backgroundColor: AppTheme.danger,
+              ),
+            );
+            return;
+          }
+        } else {
+          domainMetadata[field.key] = value;
+        }
+      }
+    }
+
     setState(() => _isCreating = true);
 
     try {
@@ -713,6 +881,8 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
         name: name,
         ownerId: 'user1', // TODO: Replace with actual user ID from auth
         filenamePrefix: prefix.isEmpty ? 'PG' : prefix,
+        domain: _selectedDomain,
+        domainMetadata: domainMetadata,
       );
 
       if (mounted) {

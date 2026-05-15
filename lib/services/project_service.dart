@@ -245,6 +245,8 @@ class ProjectService {
     required String name,
     required String ownerId,
     String filenamePrefix = 'PG',
+    String domain = 'NONE',
+    Map<String, dynamic> domainMetadata = const {},
   }) async {
     final project = Project(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -252,6 +254,8 @@ class ProjectService {
       ownerId: ownerId,
       filenamePrefix: filenamePrefix,
       createdAt: DateTime.now(),
+      domain: domain,
+      domainMetadata: domainMetadata,
     );
 
     // Write to Hive box

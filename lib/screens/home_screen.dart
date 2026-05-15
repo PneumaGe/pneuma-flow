@@ -317,6 +317,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         elevation: gpsPosition?.altitude ?? 0.0,
         deviceId: dataService.deviceInfo?.deviceId ?? 'unknown',
         channelNames: ['CO2', 'CH4', 'Temperature', 'Pressure'],
+        activeDomain: currentProject.domain,
+        domainMetadata: currentProject.domainMetadata,
       );
       
       // Update with proper ID and timestamps

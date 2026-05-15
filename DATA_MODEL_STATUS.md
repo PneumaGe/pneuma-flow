@@ -64,58 +64,43 @@ System vitals are already captured in the data model but need proper integration
 
 ---
 
-## 📋 Phase 3: Domain Specifics (PENDING)
+## ✅ Phase 3: Domain Specifics (COMPLETE)
 
 ### Priority: MEDIUM
-Domain-specific metadata fields for different use cases.
+Domain-specific metadata fields configured at project level.
 
 ### Current Status
 - [x] DomainSpecifics class defined with 4 domain maps
-- [ ] **TODO:** Settings panel UI for domain metadata
-- [ ] **TODO:** Populate domain fields during measurement
+- [x] Domain configuration system (lib/config/domain_config.dart)
+- [x] Project model extended with domain and domainMetadata fields
+- [x] Project creation UI with domain dropdown and conditional fields
+- [x] Domain metadata flows from Project → Measurement creation
+- [x] Domain data included in exports
 
-### Implementation Tasks
+### Implementation Details
+**See DOMAIN_IMPLEMENTATION_GUIDE.md for complete documentation.**
 
-#### 3.1 Settings Panel Enhancement
-Create a new tab or section in Settings for domain-specific configuration:
+**Architecture:**
+- Domain type selected during project creation (NONE, AGRICULTURE, ARCTIC, MARITIME, VOLCANOLOGY)
+- Domain-specific metadata fields defined in DomainConfig class
+- Conditional form fields appear in project creation dialog
+- Validation for required fields and numeric types
+- Metadata stored in Project.domainMetadata (Map<String, dynamic>)
+- Automatically populated in measurements via PneumaGeRecordFactory
+- Exported as part of siteContext.domainSpecifics
 
-**Agriculture Domain:**
-- Crop type (dropdown)
-- Growth stage (dropdown)
-- Fertilizer application (boolean + date picker)
-- Irrigation status (dropdown)
-- Soil type (text)
-
-**Arctic Domain:**
-- Permafrost depth (number input)
-- Active layer thickness (number input)
-- Snow cover depth (number input)
-- Thaw status (dropdown)
-
-**Maritime Domain:**
-- Water depth (number input)
-- Salinity (number input)
-- Current speed (number input)
-- Wave height (number input)
-
-**Volcanology Domain:**
-- Fumarole activity (dropdown)
-- Ground temperature (number input)
-- Seismic activity level (dropdown)
-
-#### 3.2 Project Configuration
-- Add domain selection to project creation
-- Store preferred domain in Project model
-- Auto-populate domain fields based on project settings
-
-#### 3.3 Measurement Integration
-- Update `createLiveMeasurement` to include domain data from settings
-- Add UI in home screen to show active domain
-- Include domain metadata in exports
+**Files Modified:**
+- lib/config/domain_config.dart (NEW)
+- lib/models/project.dart (added domain, domainMetadata)
+- lib/widgets/panels/files_panel.dart (enhanced UI)
+- lib/providers/project_provider.dart (updated signatures)
+- lib/services/project_service.dart (updated signatures)
+- lib/models/measurement.dart (factory accepts domain params)
+- lib/screens/home_screen.dart (passes domain to factory)
 
 ---
 
-## 👤 Phase 4: Provenance Enhancement (PENDING)
+##  Phase 4: Provenance Enhancement (PENDING)
 
 ### Priority: MEDIUM
 User profile and operator information for measurement provenance.

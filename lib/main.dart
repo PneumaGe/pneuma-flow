@@ -67,8 +67,21 @@ void main() async {
   Hive.registerAdapter(KalmanConfigAdapter());
   Hive.registerAdapter(OfflineRegionAdapter());
   
-  // Open boxes
-  await Hive.openBox<Project>('projects');
+  // Migration: Handle Project schema update (added domain fields)
+  // Try to open projects box, if it fails due to schema mismatch, delete and recreate
+  try {
+    await Hive.openBox<Project>('projects');
+  } catch (e) {
+    debugPrint('Projects box migration needed: $e');
+    try {
+      await Hive.deleteBoxFromDisk('projects');
+      debugPrint('Deleted old projects box');
+    } catch (deleteError) {
+      debugPrint('Error deleting projects box: $deleteError');
+    }
+    await Hive.openBox<Project>('projects');
+  }
+  
   await Hive.openBox<PneumaGeRecord>('measurements');
   await Hive.openBox('settings');
   
