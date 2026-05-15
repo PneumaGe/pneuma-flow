@@ -245,7 +245,6 @@ class _TimeSeriesPanelState extends ConsumerState<TimeSeriesPanel> {
     });
   }
   
-  /// Save the current boundary values to the measurement
   /// Save fit boundaries for a specific channel to the measurement
   Future<void> _saveBoundariesToMeasurement(
     PneumaGeRecord measurement,
@@ -291,17 +290,9 @@ class _TimeSeriesPanelState extends ConsumerState<TimeSeriesPanel> {
       // Get saved boundaries to pass along
       final bounds = measurement.getFitBoundaries(channel) ?? [0, 0];
       
-      print('Saving stats for $channel: flux=${stats.flux.toStringAsFixed(3)}, '
-            'r²=${stats.rSquared.toStringAsFixed(3)}, boundaries=$bounds');
-      
       final updatedMeasurement = PneumaGeRecordFactory.updateChannelStats(
         measurement, channel, bounds[0], bounds[1], stats);
       await projectService.updateMeasurement(updatedMeasurement);
-      
-      // Verify it was saved
-      final verifyStats = updatedMeasurement.getStatistics(channel);
-      print('Verified saved stats: flux=${verifyStats?.flux.toStringAsFixed(3)}, '
-            'r²=${verifyStats?.rSquared.toStringAsFixed(3)}');
       
       // Invalidate the measurement provider to reflect changes
       ref.invalidate(selectedMeasurementProvider);
