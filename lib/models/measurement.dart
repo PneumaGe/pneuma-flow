@@ -848,6 +848,18 @@ class PneumaGeRecordFactory {
     Map<String, dynamic>? domainMetadata,
     String? creatorName,
     String? organization,
+    // SystemVitals parameters
+    int batteryMv = 3700,
+    int pumpPwmDutyPct = 85,
+    double chamberTiltPitch = 0.0,
+    double chamberTiltRoll = 0.0,
+    bool shockDetected = false,
+    // EnvironmentalData parameters
+    double ambientTempC = 20.0,
+    double barometricPressurePa = 101325.0,
+    double relativeHumidityPct = 50.0,
+    // Device sensor information
+    List<SensorPayload> sensorPayload = const [],
   }) {
     final now = DateTime.now();
     final recordUuid = '${projectId}_${now.millisecondsSinceEpoch}';
@@ -870,7 +882,7 @@ class PneumaGeRecordFactory {
         systemId: deviceId ?? systemId,
         computePlatform: 'Flutter App',
         firmwareVersion: '1.0.0',
-        sensorPayload: [],
+        sensorPayload: sensorPayload,
       ),
       siteContext: SiteContext(
         activeDomain: domain,
@@ -881,9 +893,9 @@ class PneumaGeRecordFactory {
           elevationM: elevation,
         ),
         environmentalData: EnvironmentalData(
-          ambientTempC: 20.0,
-          barometricPressurePa: 101325.0,
-          relativeHumidityPct: 50.0,
+          ambientTempC: ambientTempC,
+          barometricPressurePa: barometricPressurePa,
+          relativeHumidityPct: relativeHumidityPct,
         ),
         domainSpecifics: DomainSpecifics(
           agriculture: agriculture,
@@ -898,11 +910,11 @@ class PneumaGeRecordFactory {
         chamberVolumeM3: 0.0152,
         systemVolumeM3: 0.0005,
         systemVitals: SystemVitals(
-          batteryMv: 3700,
-          pumpPwmDutyPct: 85,
-          chamberTiltPitch: 0.0,
-          chamberTiltRoll: 0.0,
-          shockDetected: false,
+          batteryMv: batteryMv,
+          pumpPwmDutyPct: pumpPwmDutyPct,
+          chamberTiltPitch: chamberTiltPitch,
+          chamberTiltRoll: chamberTiltRoll,
+          shockDetected: shockDetected,
         ),
         channels: channelNames.map((name) {
           // Determine appropriate sample format based on channel type
@@ -934,6 +946,7 @@ class PneumaGeRecordFactory {
             algorithms: {'filter_type': 'None', 'fitting_method': 'RANSAC_LS'},
             rawData: ChannelData(
               sampleFormat: rawFormat,
+              sampleCount: 0, // Initialize with 0 samples
               samples: [],
               calculatedFlux: CalculatedFlux(
                 boundaryLeftS: 0.0,
@@ -948,6 +961,7 @@ class PneumaGeRecordFactory {
             ),
             filteredData: ChannelData(
               sampleFormat: filteredFormat,
+              sampleCount: 0, // Initialize with 0 samples
               samples: [],
               calculatedFlux: CalculatedFlux(
                 boundaryLeftS: 0.0,

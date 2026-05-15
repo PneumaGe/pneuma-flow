@@ -308,10 +308,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       // Get user profile from settings
       final appSettings = await ref.read(appSettingsProvider.future);
       
+      // Collect SystemVitals from live data
+      // Battery: Convert SOC percentage (0-100) to millivolts
+      // Assuming LiPo battery: 3000mV (0%) to 4200mV (100%)
+      final batterySoc = dataService.batteryLevel; // 0-100 percentage
+      final batteryMv = (3000 + (batterySoc * 12)).toInt(); // Linear mapping
+      
+      // Pump PWM: Convert speed setting to duty cycle percentage
+      final pumpSpeed = ref.read(pumpSpeedProvider);
+      final pumpPwmDutyPct = switch (pumpSpeed) {
+        'LOW' => 30,
+        'MEDIUM' => 60,
+        'HIGH' => 90,
+        _ => 60, // Default to MEDIUM
+      };
+      
+      // Collect EnvironmentalData from chamber sensors
+      final ambientTempC = dataService.chamberTemp; // Already in Celsius
+      final barometricPressurePa = dataService.chamberPressure * 100; // Convert hPa to Pa
+      final relativeHumidityPct = dataService.chamberHumidity; // Already in percentage
+      
+      // Build SensorPayload from device info
+      final sensorPayload = <SensorPayload>[];
+      if (dataService.deviceInfo != null) {
+        for (final sensor in dataService.deviceInfo!.sensors) {
+          // Extract gas type from sensor channels (e.g., CO2, CH4) or use sensor type
+          String sensorType = sensor.sensorType;
+          if (sensor.channels.isNotEmpty) {
+            // Try to find gas name from channel definitions
+            final gasChannel = sensor.channels.firstWhere(
+              (ch) => ch.name == 'CO2' || ch.name == 'CH4' || ch.id.contains('co2') || ch.id.contains('ch4'),
+              orElse: () => sensor.channels.first,
+            );
+            sensorType = gasChannel.name;
+          }
+          
+          sensorPayload.add(SensorPayload(
+            type: sensorType,
+            model: '${sensor.make} ${sensor.model}',
+            serial: sensor.serialNumber.isNotEmpty ? sensor.serialNumber : null,
+            precision: null, // Precision not currently available in device info
+          ));
+        }
+      }
+      
       // Generate measurement ID using filename format
       final measurementId = projectService.getNextMeasurementFilename(currentProject);
       
-      // Create PneumaGeRecord using factory with user profile
+      // Create PneumaGeRecord using factory with user profile and real-time data
       var measurement = PneumaGeRecordFactory.createLiveMeasurement(
         projectId: currentProject.id,
         operatorId: appSettings.operatorId.isNotEmpty ? appSettings.operatorId : 'default_operator',
@@ -325,6 +369,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         domainMetadata: currentProject.domainMetadata,
         creatorName: appSettings.creatorName.isNotEmpty ? appSettings.creatorName : null,
         organization: appSettings.organization.isNotEmpty ? appSettings.organization : null,
+        // SystemVitals from live data
+        batteryMv: batteryMv,
+        pumpPwmDutyPct: pumpPwmDutyPct,
+        chamberTiltPitch: 0.0, // TODO: Add accelerometer data when available
+        chamberTiltRoll: 0.0,  // TODO: Add accelerometer data when available
+        shockDetected: false,  // TODO: Implement shock detection
+        // EnvironmentalData from chamber sensors
+        ambientTempC: ambientTempC,
+        barometricPressurePa: barometricPressurePa,
+        relativeHumidityPct: relativeHumidityPct,
+        // SensorPayload from device info
+        sensorPayload: sensorPayload,
       );
       
       // Update with proper ID and timestamps
