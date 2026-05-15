@@ -25,26 +25,50 @@ class AppSettings {
   @HiveField(1)
   final bool volumeButtonsEnabled; // Use volume buttons to control recording
 
+  @HiveField(2, defaultValue: '')
+  final String creatorName; // User's full name for provenance
+
+  @HiveField(3, defaultValue: '')
+  final String organization; // Organization/institution name
+
+  @HiveField(4, defaultValue: '')
+  final String operatorId; // Operator ID (email, username, etc.)
+
   const AppSettings({
     this.units = 'metric',
     this.volumeButtonsEnabled = true,
+    this.creatorName = '',
+    this.organization = '',
+    this.operatorId = '',
   });
 
   AppSettings copyWith({
     String? units,
     bool? volumeButtonsEnabled,
+    String? creatorName,
+    String? organization,
+    String? operatorId,
   }) => AppSettings(
     units: units ?? this.units,
     volumeButtonsEnabled: volumeButtonsEnabled ?? this.volumeButtonsEnabled,
+    creatorName: creatorName ?? this.creatorName,
+    organization: organization ?? this.organization,
+    operatorId: operatorId ?? this.operatorId,
   );
 
   Map<String, dynamic> toJson() => {
     'units': units,
     'volumeButtonsEnabled': volumeButtonsEnabled,
+    'creatorName': creatorName,
+    'organization': organization,
+    'operatorId': operatorId,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
     units: json['units'] as String? ?? 'metric',
     volumeButtonsEnabled: json['volumeButtonsEnabled'] as bool? ?? true,
+    creatorName: json['creatorName'] as String? ?? '',
+    organization: json['organization'] as String? ?? '',
+    operatorId: json['operatorId'] as String? ?? '',
   );
 }

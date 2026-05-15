@@ -846,6 +846,8 @@ class PneumaGeRecordFactory {
     List<String> channelNames = const ['CO2', 'CH4'],
     String? activeDomain,
     Map<String, dynamic>? domainMetadata,
+    String? creatorName,
+    String? organization,
   }) {
     final now = DateTime.now();
     final recordUuid = '${projectId}_${now.millisecondsSinceEpoch}';
@@ -861,8 +863,8 @@ class PneumaGeRecordFactory {
       version: '1.9.0',
       recordUuid: recordUuid,
       provenance: Provenance(
-        creator: operatorId,
-        organization: 'PneumaGe',
+        creator: creatorName ?? operatorId,
+        organization: organization ?? 'PneumaGe',
         project: projectId,
         operatorId: operatorId,
         systemId: deviceId ?? systemId,

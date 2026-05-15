@@ -17,6 +17,7 @@ enum LeftPanel {
   stats,
   info,
   settings,
+  profile,
   export,
 }
 
@@ -39,6 +40,8 @@ class PanelConfig {
         return 0.40;
       case LeftPanel.settings:
         return 1.0; // full — handled separately
+      case LeftPanel.profile:
+        return 0.40;
     }
   }
 

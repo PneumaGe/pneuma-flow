@@ -36,6 +36,7 @@ import '../widgets/panels/time_series_panel.dart';
 import '../widgets/panels/histogram_panel.dart';
 import '../widgets/panels/settings_panel.dart';
 import '../widgets/panels/export_panel_real.dart';
+import '../widgets/panels/user_profile_panel.dart';
 import '../widgets/map_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -304,13 +305,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         throw Exception('No active project');
       }
       
+      // Get user profile from settings
+      final appSettings = await ref.read(appSettingsProvider.future);
+      
       // Generate measurement ID using filename format
       final measurementId = projectService.getNextMeasurementFilename(currentProject);
       
-      // Create PneumaGeRecord using factory
+      // Create PneumaGeRecord using factory with user profile
       var measurement = PneumaGeRecordFactory.createLiveMeasurement(
         projectId: currentProject.id,
-        operatorId: 'default_operator', // TODO: Get from user profile
+        operatorId: appSettings.operatorId.isNotEmpty ? appSettings.operatorId : 'default_operator',
         systemId: dataService.deviceInfo?.deviceId ?? 'unknown',
         latitude: gpsPosition?.latitude ?? 0.0,
         longitude: gpsPosition?.longitude ?? 0.0,
@@ -319,6 +323,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         channelNames: ['CO2', 'CH4', 'Temperature', 'Pressure'],
         activeDomain: currentProject.domain,
         domainMetadata: currentProject.domainMetadata,
+        creatorName: appSettings.creatorName.isNotEmpty ? appSettings.creatorName : null,
+        organization: appSettings.organization.isNotEmpty ? appSettings.organization : null,
       );
       
       // Update with proper ID and timestamps
@@ -471,12 +477,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return 0;
       case LeftPanel.stats:
         return 1;
-      case LeftPanel.info:
-        return 2;
-      case LeftPanel.settings:
-        return 3;
       case LeftPanel.export:
+        return 2;
+      case LeftPanel.info:
+        return 3;
+      case LeftPanel.settings:
         return 4;
+      case LeftPanel.profile:
+        return 5;
     }
   }
 
@@ -492,6 +500,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         return InfoPanel(dataService: dataService);
       case LeftPanel.settings:
         return const SizedBox.shrink(); // handled separately
+      case LeftPanel.profile:
+        return const UserProfilePanel();
       case LeftPanel.export:
         return const ExportPanelReal();
     }
@@ -612,9 +622,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           final panels = [
                             LeftPanel.files,
                             LeftPanel.stats,
+                            LeftPanel.export,
                             LeftPanel.info,
                             LeftPanel.settings,
-                            LeftPanel.export,
+                            LeftPanel.profile,
                           ];
                           _toggleLeftPanel(panels[index]);
                     },
