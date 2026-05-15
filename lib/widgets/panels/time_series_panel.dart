@@ -18,6 +18,7 @@ import '../../theme/app_theme.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/project_provider.dart';
 import '../../providers/ransac_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../models/measurement.dart';
 import '../../services/ransac_service.dart';
 
@@ -164,8 +165,12 @@ class _TimeSeriesPanelState extends ConsumerState<TimeSeriesPanel> {
 
   /// Extract data points from a measurement's samples for the selected channel
   List<DataPoint> _getHistoricalData(PneumaGeRecord measurement, String channel) {
+    // Check if filters are enabled in settings
+    final filtersEnabled = ref.watch(filtersEnabledProvider);
+    
     // Use compatibility layer to get samples
-    final samples = measurement.getSamples(useFiltered: true);
+    // Use filtered data if filters are enabled, otherwise use raw data
+    final samples = measurement.getSamples(useFiltered: filtersEnabled);
     
     return samples
         .where((sample) => sample.channelValues.containsKey(channel))
@@ -285,9 +290,19 @@ class _TimeSeriesPanelState extends ConsumerState<TimeSeriesPanel> {
       );
       // Get saved boundaries to pass along
       final bounds = measurement.getFitBoundaries(channel) ?? [0, 0];
+      
+      print('Saving stats for $channel: flux=${stats.flux.toStringAsFixed(3)}, '
+            'r²=${stats.rSquared.toStringAsFixed(3)}, boundaries=$bounds');
+      
       final updatedMeasurement = PneumaGeRecordFactory.updateChannelStats(
         measurement, channel, bounds[0], bounds[1], stats);
       await projectService.updateMeasurement(updatedMeasurement);
+      
+      // Verify it was saved
+      final verifyStats = updatedMeasurement.getStatistics(channel);
+      print('Verified saved stats: flux=${verifyStats?.flux.toStringAsFixed(3)}, '
+            'r²=${verifyStats?.rSquared.toStringAsFixed(3)}');
+      
       // Invalidate the measurement provider to reflect changes
       ref.invalidate(selectedMeasurementProvider);
     } catch (e) {

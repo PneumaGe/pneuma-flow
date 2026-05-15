@@ -196,11 +196,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final sample = Sample(
       timestamp: DateTime.now(),
       channelValues: {
-        'co2': dataService.gasConcentration,
-        'battery': dataService.batteryLevel,
-        'chamber_temp': dataService.chamberTemp,
-        'chamber_pressure': dataService.chamberPressure,
-        'chamber_humidity': dataService.chamberHumidity,
+        'CO2': dataService.gasConcentration,
+        'CH4': 0.0, // TODO: Get from second channel
+        'Temperature': dataService.chamberTemp,
+        'Pressure': dataService.chamberPressure,
       },
     );
     
@@ -317,7 +316,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         longitude: gpsPosition?.longitude ?? 0.0,
         elevation: gpsPosition?.altitude ?? 0.0,
         deviceId: dataService.deviceInfo?.deviceId ?? 'unknown',
-        channelNames: ['CO2', 'CH4'], // TODO: Get from device info
+        channelNames: ['CO2', 'CH4', 'Temperature', 'Pressure'],
       );
       
       // Update with proper ID and timestamps
@@ -342,7 +341,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           measurement,
           sample.timestamp,
           sample.channelValues,
-          useFiltered: true, // Use filtered if filters are enabled
+          useFiltered: false, // Store as raw data during collection
         );
       }
       

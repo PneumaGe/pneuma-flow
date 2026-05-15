@@ -38,7 +38,7 @@ class ExportService {
   ///
   /// Header comment block contains metadata, followed by a standard CSV table
   /// with timestamp and one column per channel.
-  String measurementToCsv(PneumaGeRecord measurement, {bool useFiltered = true}) {
+  String measurementToCsv(PneumaGeRecord measurement, {bool useFiltered = false}) {
     final buf = StringBuffer();
 
     // Metadata header
@@ -99,7 +99,7 @@ class ExportService {
   ///
   /// Adds a `measurement_id` column to distinguish rows from different
   /// measurements.
-  String projectToCsv(Project project, List<PneumaGeRecord> measurements, {bool useFiltered = true}) {
+  String projectToCsv(Project project, List<PneumaGeRecord> measurements, {bool useFiltered = false}) {
     final buf = StringBuffer();
 
     // Project metadata header
@@ -150,6 +150,7 @@ class ExportService {
   Future<String> projectToZip(
     Project project,
     List<PneumaGeRecord> measurements,
+    {bool useFiltered = false}
   ) async {
     final archive = Archive();
 
@@ -167,7 +168,7 @@ class ExportService {
         ),
       );
 
-      final csvContent = measurementToCsv(m);
+      final csvContent = measurementToCsv(m, useFiltered: useFiltered);
       archive.addFile(
         ArchiveFile.bytes(
           'measurements/$baseName.csv',
@@ -182,7 +183,7 @@ class ExportService {
       ArchiveFile.bytes('project.json', utf8.encode(projectJson)),
     );
 
-    final projectCsv = projectToCsv(project, measurements);
+    final projectCsv = projectToCsv(project, measurements, useFiltered: useFiltered);
     archive.addFile(
       ArchiveFile.bytes('project.csv', utf8.encode(projectCsv)),
     );

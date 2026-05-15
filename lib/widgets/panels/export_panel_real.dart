@@ -22,6 +22,7 @@ import '../../models/measurement.dart';
 import '../../services/export_service.dart';
 import '../../providers/project_provider.dart';
 import '../../providers/export_provider.dart';
+import '../../providers/settings_provider.dart';
 import 'export_panel.dart';
 
 class ExportPanelReal extends ConsumerStatefulWidget {
@@ -158,6 +159,9 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
 
       String? exportedFilePath;
 
+      // Check if filters are enabled
+      final filtersEnabled = ref.read(filtersEnabledProvider);
+
       // Export based on format
       if (_selectedFormat == 'zip') {
         // Multi-project ZIP export
@@ -166,6 +170,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
           downloadsDir.path,
           filename,
           exportService,
+          filtersEnabled,
         );
       } else {
         // For JSON/CSV, create a combined file
@@ -174,6 +179,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
           downloadsDir.path,
           filename,
           exportService,
+          filtersEnabled,
         );
       }
 
@@ -204,6 +210,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
     String dirPath,
     String filename,
     ExportService exportService,
+    bool useFiltered,
   ) async {
     // For single project: export to temp, then move to destination
     if (projectsWithMeasurements.length == 1) {
@@ -212,7 +219,11 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
       final measurements = entry.value;
       
       // Export to temp directory (default behavior)
-      final tempZipPath = await exportService.projectToZip(project, measurements);
+      final tempZipPath = await exportService.projectToZip(
+        project, 
+        measurements, 
+        useFiltered: useFiltered,
+      );
       
       // Move to target directory with custom filename
       final targetPath = '$dirPath/$filename.zip';
@@ -230,7 +241,11 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
     final project = entry.key;
     final measurements = entry.value;
     
-    final tempZipPath = await exportService.projectToZip(project, measurements);
+    final tempZipPath = await exportService.projectToZip(
+      project, 
+      measurements, 
+      useFiltered: useFiltered,
+    );
     final targetPath = '$dirPath/$filename.zip';
     await File(tempZipPath).copy(targetPath);
     await File(tempZipPath).delete();
@@ -243,6 +258,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
     String dirPath,
     String filename,
     ExportService exportService,
+    bool useFiltered,
   ) async {
     final buffer = StringBuffer();
     
@@ -283,7 +299,11 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
         buffer.writeln('# Measurements: ${measurements.length}');
         buffer.writeln();
         
-        final projectCsv = exportService.projectToCsv(project, measurements);
+        final projectCsv = exportService.projectToCsv(
+          project, 
+          measurements, 
+          useFiltered: useFiltered,
+        );
         buffer.writeln(projectCsv);
         buffer.writeln();
         buffer.writeln('# End of project: ${project.name}');
@@ -344,6 +364,9 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
       // Use temp directory for sharing
       final tempDir = await getTemporaryDirectory();
       
+      // Check if filters are enabled
+      final filtersEnabled = ref.read(filtersEnabledProvider);
+      
       String exportPath;
 
       if (_selectedFormat == 'zip') {
@@ -352,6 +375,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
           tempDir.path,
           filename,
           exportService,
+          filtersEnabled,
         );
       } else {
         exportPath = await _exportMultiProjectFile(
@@ -359,6 +383,7 @@ class _ExportPanelRealState extends ConsumerState<ExportPanelReal> {
           tempDir.path,
           filename,
           exportService,
+          filtersEnabled,
         );
       }
 

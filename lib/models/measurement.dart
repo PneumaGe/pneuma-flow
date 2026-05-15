@@ -67,7 +67,7 @@ class PneumaGeRecord {
 // PROVENANCE & HARDWARE METADATA
 // ==========================================
 
-@HiveType(typeId: 10)
+@HiveType(typeId: 22)
 class Provenance {
   @HiveField(0)
   final String creator;
@@ -130,7 +130,7 @@ class Provenance {
   };
 }
 
-@HiveType(typeId: 11)
+@HiveType(typeId: 23)
 class SensorPayload {
   @HiveField(0)
   final String type;
@@ -170,7 +170,7 @@ class SensorPayload {
 // SITE CONTEXT & DOMAINS
 // ==========================================
 
-@HiveType(typeId: 12)
+@HiveType(typeId: 24)
 class SiteContext {
   @HiveField(0)
   final String activeDomain;
@@ -212,7 +212,7 @@ class SiteContext {
   };
 }
 
-@HiveType(typeId: 13)
+@HiveType(typeId: 25)
 class Coordinates {
   @HiveField(0)
   final double lat;
@@ -242,7 +242,7 @@ class Coordinates {
   };
 }
 
-@HiveType(typeId: 14)
+@HiveType(typeId: 26)
 class EnvironmentalData {
   @HiveField(0)
   final double ambientTempC;
@@ -272,7 +272,7 @@ class EnvironmentalData {
   };
 }
 
-@HiveType(typeId: 15)
+@HiveType(typeId: 27)
 class DomainSpecifics {
   @HiveField(0)
   final Map<String, dynamic> agriculture;
@@ -312,7 +312,7 @@ class DomainSpecifics {
 // MEASUREMENT CYCLE & MULTI-CHANNEL DATA
 // ==========================================
 
-@HiveType(typeId: 16)
+@HiveType(typeId: 28)
 class MeasurementCycle {
   @HiveField(0)
   final String cycleId;
@@ -363,7 +363,7 @@ class MeasurementCycle {
   };
 }
 
-@HiveType(typeId: 17)
+@HiveType(typeId: 29)
 class SystemVitals {
   @HiveField(0)
   final int batteryMv;
@@ -405,7 +405,7 @@ class SystemVitals {
   };
 }
 
-@HiveType(typeId: 18)
+@HiveType(typeId: 30)
 class FluxChannel {
   @HiveField(0)
   final String targetGas;
@@ -453,7 +453,7 @@ class FluxChannel {
   };
 }
 
-@HiveType(typeId: 19)
+@HiveType(typeId: 31)
 class CalibrationData {
   @HiveField(0)
   final String curveId;
@@ -495,7 +495,7 @@ class CalibrationData {
   };
 }
 
-@HiveType(typeId: 20)
+@HiveType(typeId: 32)
 class ChannelData {
   @HiveField(0)
   final List<String> sampleFormat;
@@ -540,7 +540,7 @@ class ChannelData {
   }
 }
 
-@HiveType(typeId: 21)
+@HiveType(typeId: 33)
 class CalculatedFlux {
   @HiveField(0)
   final double boundaryLeftS;
@@ -711,11 +711,25 @@ extension PneumaGeRecordHelpers on PneumaGeRecord {
             timestamp = startTime.add(Duration(milliseconds: timestampMs));
             
             // Find concentration value (second element based on sample_format)
-            // sample_format is like ["timestamp_ms", "concentration_ppm", "chamber_temp_c", "chamber_pressure_pa"]
+            // sample_format varies by channel type:
+            // - Gas channels: ["timestamp_ms", "concentration_ppm", ...]
+            // - Temperature: ["timestamp_ms", "temperature_c"]
+            // - Pressure: ["timestamp_ms", "pressure_pa"]
             if (sample.length > 1 && data.sampleFormat.length > 1) {
-              final concentrationIdx = data.sampleFormat.indexOf('concentration_ppm');
-              if (concentrationIdx >= 0 && concentrationIdx < sample.length) {
-                channelValues[channel.targetGas] = (sample[concentrationIdx] as num).toDouble();
+              // Try to find the appropriate field based on channel type
+              int valueIdx = -1;
+              
+              if (channel.targetGas == 'Temperature') {
+                valueIdx = data.sampleFormat.indexOf('temperature_c');
+              } else if (channel.targetGas == 'Pressure') {
+                valueIdx = data.sampleFormat.indexOf('pressure_pa');
+              } else {
+                // Gas channels - look for concentration_ppm
+                valueIdx = data.sampleFormat.indexOf('concentration_ppm');
+              }
+              
+              if (valueIdx >= 0 && valueIdx < sample.length) {
+                channelValues[channel.targetGas] = (sample[valueIdx] as num).toDouble();
               } else if (sample.length > 1) {
                 // Fallback: use second element
                 channelValues[channel.targetGas] = (sample[1] as num).toDouble();
@@ -738,12 +752,12 @@ extension PneumaGeRecordHelpers on PneumaGeRecord {
     for (final channel in measurementCycle.channels) {
       if (channel.targetGas == channelName) {
         // Convert time boundaries to sample indices
-        final flux = channel.filteredData.calculatedFlux;
+        final flux = channel.rawData.calculatedFlux;
         final startMs = (flux.boundaryLeftS * 1000).toInt();
         final endMs = (flux.boundaryRightS * 1000).toInt();
         
         // Find corresponding sample indices
-        final samples = channel.filteredData.samples;
+        final samples = channel.rawData.samples;
         int? startIdx;
         int? endIdx;
         
@@ -771,13 +785,13 @@ extension PneumaGeRecordHelpers on PneumaGeRecord {
   MeasurementStats? getStatistics(String channelName) {
     for (final channel in measurementCycle.channels) {
       if (channel.targetGas == channelName) {
-        final flux = channel.filteredData.calculatedFlux;
+        final flux = channel.rawData.calculatedFlux;
         return MeasurementStats(
           flux: flux.fluxRateMgM2H,
           fluxError: flux.fluxError,
           rSquared: flux.rSquared,
           slope: flux.slopePpmS,
-          inlierCount: channel.filteredData.samples.length, // Approximation
+          inlierCount: channel.rawData.samples.length, // Approximation
         );
       }
     }
@@ -879,46 +893,64 @@ class PneumaGeRecordFactory {
           chamberTiltRoll: 0.0,
           shockDetected: false,
         ),
-        channels: channelNames.map((name) => FluxChannel(
-          targetGas: name,
-          sensorReference: 'Unknown',
-          calibration: CalibrationData(
-            curveId: 'FACTORY',
-            type: 'linear',
-            coefficients: [1.0, 0.0],
-            saturationThresholdPpm: 100000.0,
-            lastCalibrated: now,
-          ),
-          algorithms: {'filter_type': 'None', 'fitting_method': 'RANSAC_LS'},
-          rawData: ChannelData(
-            sampleFormat: ['timestamp_ms', 'raw_sensor_val', 'sensor_temp_c', 'chamber_pressure_pa'],
-            samples: [],
-            calculatedFlux: CalculatedFlux(
-              boundaryLeftS: 0.0,
-              boundaryRightS: 0.0,
-              slopePpmS: 0.0,
-              fluxRateMgM2H: 0.0,
-              fluxError: 0.0,
-              rSquared: 0.0,
-              qaQcFlag: 0,
-              qaQcReason: 'pending',
+        channels: channelNames.map((name) {
+          // Determine appropriate sample format based on channel type
+          List<String> rawFormat;
+          List<String> filteredFormat;
+          
+          if (name == 'Temperature') {
+            rawFormat = ['timestamp_ms', 'temperature_c'];
+            filteredFormat = ['timestamp_ms', 'temperature_c'];
+          } else if (name == 'Pressure') {
+            rawFormat = ['timestamp_ms', 'pressure_pa'];
+            filteredFormat = ['timestamp_ms', 'pressure_pa'];
+          } else {
+            // CO2, CH4, or other gas channels
+            rawFormat = ['timestamp_ms', 'raw_sensor_val', 'sensor_temp_c', 'chamber_pressure_pa'];
+            filteredFormat = ['timestamp_ms', 'concentration_ppm', 'chamber_temp_c', 'chamber_pressure_pa'];
+          }
+          
+          return FluxChannel(
+            targetGas: name,
+            sensorReference: 'Unknown',
+            calibration: CalibrationData(
+              curveId: 'FACTORY',
+              type: 'linear',
+              coefficients: [1.0, 0.0],
+              saturationThresholdPpm: 100000.0,
+              lastCalibrated: now,
             ),
-          ),
-          filteredData: ChannelData(
-            sampleFormat: ['timestamp_ms', 'concentration_ppm', 'chamber_temp_c', 'chamber_pressure_pa'],
-            samples: [],
-            calculatedFlux: CalculatedFlux(
-              boundaryLeftS: 0.0,
-              boundaryRightS: 0.0,
-              slopePpmS: 0.0,
-              fluxRateMgM2H: 0.0,
-              fluxError: 0.0,
-              rSquared: 0.0,
-              qaQcFlag: 0,
-              qaQcReason: 'pending',
+            algorithms: {'filter_type': 'None', 'fitting_method': 'RANSAC_LS'},
+            rawData: ChannelData(
+              sampleFormat: rawFormat,
+              samples: [],
+              calculatedFlux: CalculatedFlux(
+                boundaryLeftS: 0.0,
+                boundaryRightS: 0.0,
+                slopePpmS: 0.0,
+                fluxRateMgM2H: 0.0,
+                fluxError: 0.0,
+                rSquared: 0.0,
+                qaQcFlag: 0,
+                qaQcReason: 'pending',
+              ),
             ),
-          ),
-        )).toList(),
+            filteredData: ChannelData(
+              sampleFormat: filteredFormat,
+              samples: [],
+              calculatedFlux: CalculatedFlux(
+                boundaryLeftS: 0.0,
+                boundaryRightS: 0.0,
+                slopePpmS: 0.0,
+                fluxRateMgM2H: 0.0,
+                fluxError: 0.0,
+                rSquared: 0.0,
+                qaQcFlag: 0,
+                qaQcReason: 'pending',
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -935,7 +967,17 @@ class PneumaGeRecordFactory {
       final value = channelValues[channel.targetGas];
       if (value == null) return channel;
 
-      final newSample = [timestampMs, value, 20.0, 101325.0]; // timestamp, value, temp, pressure
+      // Create sample array based on channel type
+      final List<dynamic> newSample;
+      if (channel.targetGas == 'Temperature' || channel.targetGas == 'Pressure') {
+        // Simple 2-element array for temperature and pressure
+        newSample = [timestampMs, value];
+      } else {
+        // 4-element array for gas channels with chamber conditions
+        final temp = channelValues['Temperature'] ?? 20.0;
+        final pressure = channelValues['Pressure'] ?? 101325.0;
+        newSample = [timestampMs, value, temp, pressure];
+      }
       
       if (useFiltered) {
         final updatedSamples = [...channel.filteredData.samples, newSample];
@@ -1000,7 +1042,7 @@ class PneumaGeRecordFactory {
       if (channel.targetGas != channelName) return channel;
 
       // Convert sample indices to time boundaries
-      final samples = channel.filteredData.samples;
+      final samples = channel.rawData.samples;
       final startMs = startIdx < samples.length && samples[startIdx].isNotEmpty 
           ? (samples[startIdx][0] as num).toDouble() 
           : 0.0;
@@ -1024,14 +1066,14 @@ class PneumaGeRecordFactory {
         sensorReference: channel.sensorReference,
         calibration: channel.calibration,
         algorithms: channel.algorithms,
-        rawData: channel.rawData,
-        filteredData: ChannelData(
-          sampleFormat: channel.filteredData.sampleFormat,
-          sampleCount: channel.filteredData.sampleCount,
-          fileSha256: channel.filteredData.fileSha256,
-          samples: channel.filteredData.samples,
+        rawData: ChannelData(
+          sampleFormat: channel.rawData.sampleFormat,
+          sampleCount: channel.rawData.sampleCount,
+          fileSha256: channel.rawData.fileSha256,
+          samples: channel.rawData.samples,
           calculatedFlux: updatedFlux,
         ),
+        filteredData: channel.filteredData,
       );
     }).toList();
 

@@ -54,3 +54,23 @@ final pumpSpeedProvider = Provider<String>((ref) {
     orElse: () => 'MEDIUM', // Default while loading or on error
   );
 });
+
+/// Provider that determines if any filters are enabled
+/// Returns true if Alpha-Beta or Kalman filters are enabled for any channel
+final filtersEnabledProvider = Provider<bool>((ref) {
+  final deviceSettings = ref.watch(deviceSettingsProvider);
+  return deviceSettings.maybeWhen(
+    data: (settings) {
+      // Check if any Alpha-Beta filter is enabled
+      final alphaBetaEnabled = settings.filterConfigs?.values
+          .any((config) => config.enabled) ?? false;
+      
+      // Check if any Kalman filter is enabled
+      final kalmanEnabled = settings.kalmanConfigs?.values
+          .any((config) => config.enabled) ?? false;
+      
+      return alphaBetaEnabled || kalmanEnabled;
+    },
+    orElse: () => false, // Default: no filters enabled
+  );
+});

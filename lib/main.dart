@@ -67,7 +67,7 @@ void main() async {
   Hive.registerAdapter(KalmanConfigAdapter());
   Hive.registerAdapter(OfflineRegionAdapter());
   
-  // Open boxes (Phase 1: boxes exist but not used yet)
+  // Open boxes
   await Hive.openBox<Project>('projects');
   await Hive.openBox<PneumaGeRecord>('measurements');
   await Hive.openBox('settings');

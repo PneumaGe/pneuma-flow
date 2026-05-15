@@ -54,7 +54,7 @@ class PneumaGeRecordAdapter extends TypeAdapter<PneumaGeRecord> {
 
 class ProvenanceAdapter extends TypeAdapter<Provenance> {
   @override
-  final int typeId = 10;
+  final int typeId = 22;
 
   @override
   Provenance read(BinaryReader reader) {
@@ -109,7 +109,7 @@ class ProvenanceAdapter extends TypeAdapter<Provenance> {
 
 class SensorPayloadAdapter extends TypeAdapter<SensorPayload> {
   @override
-  final int typeId = 11;
+  final int typeId = 23;
 
   @override
   SensorPayload read(BinaryReader reader) {
@@ -152,7 +152,7 @@ class SensorPayloadAdapter extends TypeAdapter<SensorPayload> {
 
 class SiteContextAdapter extends TypeAdapter<SiteContext> {
   @override
-  final int typeId = 12;
+  final int typeId = 24;
 
   @override
   SiteContext read(BinaryReader reader) {
@@ -198,7 +198,7 @@ class SiteContextAdapter extends TypeAdapter<SiteContext> {
 
 class CoordinatesAdapter extends TypeAdapter<Coordinates> {
   @override
-  final int typeId = 13;
+  final int typeId = 25;
 
   @override
   Coordinates read(BinaryReader reader) {
@@ -238,7 +238,7 @@ class CoordinatesAdapter extends TypeAdapter<Coordinates> {
 
 class EnvironmentalDataAdapter extends TypeAdapter<EnvironmentalData> {
   @override
-  final int typeId = 14;
+  final int typeId = 26;
 
   @override
   EnvironmentalData read(BinaryReader reader) {
@@ -278,7 +278,7 @@ class EnvironmentalDataAdapter extends TypeAdapter<EnvironmentalData> {
 
 class DomainSpecificsAdapter extends TypeAdapter<DomainSpecifics> {
   @override
-  final int typeId = 15;
+  final int typeId = 27;
 
   @override
   DomainSpecifics read(BinaryReader reader) {
@@ -321,7 +321,7 @@ class DomainSpecificsAdapter extends TypeAdapter<DomainSpecifics> {
 
 class MeasurementCycleAdapter extends TypeAdapter<MeasurementCycle> {
   @override
-  final int typeId = 16;
+  final int typeId = 28;
 
   @override
   MeasurementCycle read(BinaryReader reader) {
@@ -370,7 +370,7 @@ class MeasurementCycleAdapter extends TypeAdapter<MeasurementCycle> {
 
 class SystemVitalsAdapter extends TypeAdapter<SystemVitals> {
   @override
-  final int typeId = 17;
+  final int typeId = 29;
 
   @override
   SystemVitals read(BinaryReader reader) {
@@ -416,7 +416,7 @@ class SystemVitalsAdapter extends TypeAdapter<SystemVitals> {
 
 class FluxChannelAdapter extends TypeAdapter<FluxChannel> {
   @override
-  final int typeId = 18;
+  final int typeId = 30;
 
   @override
   FluxChannel read(BinaryReader reader) {
@@ -465,7 +465,7 @@ class FluxChannelAdapter extends TypeAdapter<FluxChannel> {
 
 class CalibrationDataAdapter extends TypeAdapter<CalibrationData> {
   @override
-  final int typeId = 19;
+  final int typeId = 31;
 
   @override
   CalibrationData read(BinaryReader reader) {
@@ -511,7 +511,7 @@ class CalibrationDataAdapter extends TypeAdapter<CalibrationData> {
 
 class ChannelDataAdapter extends TypeAdapter<ChannelData> {
   @override
-  final int typeId = 20;
+  final int typeId = 32;
 
   @override
   ChannelData read(BinaryReader reader) {
@@ -559,7 +559,7 @@ class ChannelDataAdapter extends TypeAdapter<ChannelData> {
 
 class CalculatedFluxAdapter extends TypeAdapter<CalculatedFlux> {
   @override
-  final int typeId = 21;
+  final int typeId = 33;
 
   @override
   CalculatedFlux read(BinaryReader reader) {
