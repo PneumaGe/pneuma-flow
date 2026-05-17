@@ -17,6 +17,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
+import '../config/schema_version.dart';
 import '../models/measurement.dart';
 import '../models/project.dart';
 
@@ -84,6 +85,9 @@ class SyncService {
     String projectId,
     PneumaGeRecord measurement,
   ) async {
+    // Validate schema before upload
+    _validateRecordSchema(measurement);
+    
     // Lightweight metadata to Firestore (without sample arrays)
     final metaData = {
       'record_uuid': measurement.recordUuid,
@@ -141,9 +145,29 @@ class SyncService {
         throw StateError('Measurement data not found for measurement ${doc.id}');
       }
       final recordJson = jsonDecode(utf8.decode(fullData));
-      return PneumaGeRecord.fromJson(recordJson);
+      final record = PneumaGeRecord.fromJson(recordJson);
+      
+      // Validate restored record
+      try {
+        _validateRestoredRecord(record);
+        return record;
+      } catch (e) {
+        print('⚠️ Skipping invalid measurement ${record.recordUuid}: $e');
+        return null; // Mark for filtering
+      }
     });
-    final measurements = await Future.wait(measurementFutures);
+    final allResults = await Future.wait(measurementFutures);
+    
+    // Filter out null (invalid) measurements
+    final measurements = allResults.whereType<PneumaGeRecord>().toList();
+    
+    // Ensure we have at least some valid data
+    if (measurements.isEmpty && measurementDocs.docs.isNotEmpty) {
+      throw StateError(
+        'No valid measurements found in project $projectId. '
+        'Schema version incompatible? Update app to restore this data.'
+      );
+    }
 
     return (project: project, measurements: measurements);
   }
@@ -184,6 +208,96 @@ class SyncService {
     }
 
     return projectMap.values.toList();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Validation
+  // ---------------------------------------------------------------------------
+
+  /// Validate a record's schema before uploading to Firebase.
+  ///
+  /// Throws [StateError] if validation fails.
+  void _validateRecordSchema(PneumaGeRecord measurement) {
+    // Check schema version compatibility
+    if (measurement.version != kSchemaVersion) {
+      throw StateError(
+        'Schema version mismatch: Record is ${measurement.version}, '
+        'but app expects $kSchemaVersion. Cannot sync incompatible data.'
+      );
+    }
+    
+    // Validate required fields
+    if (measurement.recordUuid.isEmpty) {
+      throw StateError('Invalid record: missing recordUuid');
+    }
+    
+    if (measurement.measurementCycle.channels.isEmpty) {
+      throw StateError('Invalid record: no flux channels defined');
+    }
+    
+    // Validate data integrity for each channel
+    for (final channel in measurement.measurementCycle.channels) {
+      // Check that channel has sample data
+      if (channel.rawData.samples.isEmpty) {
+        throw StateError(
+          'Invalid channel ${channel.targetGas}: no raw sample data'
+        );
+      }
+      
+      // Validate sample format is defined
+      if (channel.rawData.sampleFormat.isEmpty) {
+        throw StateError(
+          'Invalid channel ${channel.targetGas}: missing sample format'
+        );
+      }
+      
+      // Validate all samples match the format length
+      final expectedLength = channel.rawData.sampleFormat.length;
+      for (var i = 0; i < channel.rawData.samples.length; i++) {
+        if (channel.rawData.samples[i].length != expectedLength) {
+          throw StateError(
+            'Invalid channel ${channel.targetGas}: '
+            'sample $i has ${channel.rawData.samples[i].length} values, '
+            'expected $expectedLength (matching sample_format)'
+          );
+        }
+      }
+    }
+    
+    // Validate provenance exists
+    if (measurement.provenance.creator.isEmpty) {
+      throw StateError('Invalid record: missing provenance.creator');
+    }
+  }
+
+  /// Validate a restored record's compatibility with current app version.
+  ///
+  /// Throws [StateError] if record cannot be used by this app version.
+  void _validateRestoredRecord(PneumaGeRecord record) {
+    // Check version compatibility using semantic versioning
+    if (!isSchemaCompatible(record.version, appVersion: kSchemaVersion)) {
+      throw StateError(
+        'Incompatible schema version ${record.version} '
+        '(app supports $kSchemaVersion)'
+      );
+    }
+    
+    // Validate required data structures exist
+    if (record.provenance.creator.isEmpty) {
+      throw StateError('Missing required provenance data');
+    }
+    
+    // Check for required measurement data
+    if (record.measurementCycle.channels.isEmpty) {
+      throw StateError('No flux channels in measurement');
+    }
+    
+    // Basic data integrity check
+    for (final channel in record.measurementCycle.channels) {
+      if (channel.rawData.samples.isEmpty) {
+        throw StateError('Channel ${channel.targetGas} has no data');
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
