@@ -104,6 +104,22 @@ class BleService {
   DeviceInfo? get deviceInfo => _deviceInfo;
   BluetoothDevice? get connectedDevice => _connectedDevice;
 
+  /// Check data model compatibility and log warnings
+  void _checkDataModelCompatibility(DeviceInfo deviceInfo) {
+    const appVersion = '1.9.0'; // PneumaGe Master Schema version
+    
+    if (!deviceInfo.isDataModelCompatible(appVersion: appVersion)) {
+      print('⚠️ WARNING: Data model version mismatch!');
+      print('   Device: ${deviceInfo.dataModelVersion}');
+      print('   App: $appVersion');
+      print('   ${deviceInfo.getCompatibilityMessage(appVersion: appVersion)}');
+    } else if (deviceInfo.dataModelVersion != null) {
+      print('✅ Data model compatible: Device ${deviceInfo.dataModelVersion}, App $appVersion');
+    } else {
+      print('ℹ️ Legacy firmware detected (no schema version)');
+    }
+  }
+
   /// Start scanning for PneumaGe devices
   Future<void> startScan() async {
     // Request Bluetooth permissions if needed
@@ -312,6 +328,10 @@ class BleService {
       // If we got here, JSON is valid and complete!
       print("Device info JSON is complete and valid!");
       _deviceInfo = DeviceInfo.fromJson(json);
+      
+      // Check data model compatibility
+      _checkDataModelCompatibility(_deviceInfo!);
+      
       if (!_deviceInfoController.isClosed) {
         _deviceInfoController.add(_deviceInfo!);
       }
@@ -335,6 +355,10 @@ class BleService {
       
       final json = jsonDecode(jsonString);
       _deviceInfo = DeviceInfo.fromJson(json);
+      
+      // Check data model compatibility
+      _checkDataModelCompatibility(_deviceInfo!);
+      
       if (!_deviceInfoController.isClosed) {
         _deviceInfoController.add(_deviceInfo!);
       }

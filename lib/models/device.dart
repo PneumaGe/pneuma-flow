@@ -160,6 +160,7 @@ class DeviceInfo {
   final String processorModel;
   final String processorSerial;
   final String firmwareVersion;
+  final String? dataModelVersion; // Schema version from device
   final DateTime? lastSeen; // set by app on cache
   final PumpInfo pump;
   final List<SensorInfo> sensors;
@@ -174,6 +175,7 @@ class DeviceInfo {
     required this.processorModel,
     required this.processorSerial,
     required this.firmwareVersion,
+    this.dataModelVersion,
     this.lastSeen,
     required this.pump,
     required this.sensors,
@@ -184,6 +186,59 @@ class DeviceInfo {
   List<ChannelDefinition> get allChannels =>
       sensors.expand((s) => s.channels).toList();
 
+  /// Check if device data model version is compatible with app
+  bool isDataModelCompatible({String appVersion = '1.9.0'}) {
+    if (dataModelVersion == null) {
+      // Legacy firmware without version field - assume compatible for now
+      return true;
+    }
+    
+    // Parse semantic versions
+    final deviceParts = dataModelVersion!.split('.').map((s) {
+      try {
+        return int.parse(s);
+      } catch (e) {
+        return 0;
+      }
+    }).toList();
+    final appParts = appVersion.split('.').map((s) {
+      try {
+        return int.parse(s);
+      } catch (e) {
+        return 0;
+      }
+    }).toList();
+    
+    if (deviceParts.length < 2 || appParts.length < 2) {
+      return false; // Invalid version format
+    }
+    
+    // Major version must match
+    if (deviceParts[0] != appParts[0]) {
+      return false;
+    }
+    
+    // Minor version: app must be >= device version
+    if (appParts[1] < deviceParts[1]) {
+      return false; // App is too old
+    }
+    
+    return true;
+  }
+
+  /// Get human-readable compatibility message
+  String getCompatibilityMessage({String appVersion = '1.9.0'}) {
+    if (dataModelVersion == null) {
+      return 'Legacy firmware detected (no schema version)';
+    }
+    
+    if (isDataModelCompatible(appVersion: appVersion)) {
+      return 'Schema compatible: Device $dataModelVersion, App $appVersion';
+    }
+    
+    return 'INCOMPATIBLE: Device schema $dataModelVersion does not match app $appVersion';
+  }
+
   Map<String, dynamic> toJson() => {
     'deviceId': deviceId,
     'deviceName': deviceName,
@@ -193,6 +248,7 @@ class DeviceInfo {
     'processorModel': processorModel,
     'processorSerial': processorSerial,
     'firmwareVersion': firmwareVersion,
+    if (dataModelVersion != null) 'dataModelVersion': dataModelVersion,
     if (lastSeen != null) 'lastSeen': lastSeen!.toIso8601String(),
     'pump': pump.toJson(),
     'sensors': sensors.map((s) => s.toJson()).toList(),
@@ -208,6 +264,7 @@ class DeviceInfo {
     processorModel: json['processorModel'] as String,
     processorSerial: json['processorSerial'] as String,
     firmwareVersion: json['firmwareVersion'] as String,
+    dataModelVersion: json['dataModelVersion'] as String?,
     lastSeen: json['lastSeen'] != null
         ? DateTime.parse(json['lastSeen'] as String)
         : null,

@@ -131,6 +131,13 @@ class InfoPanel extends StatelessWidget {
                         labelStyle: labelStyle,
                         valueStyle: valueStyle,
                       ),
+                      const SizedBox(height: 10),
+                      _InfoRow(
+                        label: 'Schema Version',
+                        value: deviceInfo.dataModelVersion ?? 'Unknown',
+                        labelStyle: labelStyle,
+                        valueStyle: valueStyle,
+                      ),
                     ],
                   ),
           ),
