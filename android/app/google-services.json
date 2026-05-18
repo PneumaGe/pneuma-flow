@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "242518865307",
+    "project_id": "pneuma-firebase",
+    "storage_bucket": "pneuma-firebase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:242518865307:android:610d5f35024a5d04151d3e",
+        "android_client_info": {
+          "package_name": "com.pneumage.pneumage_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDm0rkD6mm0qbRf8K63sFrhmBqtIC1GeSA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
