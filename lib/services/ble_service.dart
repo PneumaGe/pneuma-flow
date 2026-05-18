@@ -148,12 +148,25 @@ class BleService {
       // Stop heartbeat if running
       _stopHeartbeat();
 
-      // Connect to the device
-      await device.connect(license: License.free);
+      // Connect to the device with timeout
+      // Use autoConnect=false for faster connection but may be less reliable
+      // in areas with poor signal
+      print('[BLE] Connecting to device...');
+      await device.connect(
+        license: License.free,
+        timeout: const Duration(seconds: 35),
+        autoConnect: false,
+      );
       _connectedDevice = device;
       if (!_connectionStateController.isClosed) {
         _connectionStateController.add(true);
       }
+      print('[BLE] Physical connection established');
+
+      // Android BLE quirk: Wait a moment before service discovery
+      // This prevents the stack from hanging on discoverServices()
+      print('[BLE] Waiting 1000ms before service discovery...');
+      await Future.delayed(const Duration(milliseconds: 1000));
 
       // Listen for disconnection
       final disconnectSub = device.connectionState.listen((state) {
@@ -164,11 +177,25 @@ class BleService {
       _subscriptions.add(disconnectSub);
 
       // Discover services and characteristics
-      final services = await device.discoverServices();
+      print('[BLE] Discovering services...');
+      print('[BLE] Device isConnected: ${device.isConnected}');
+      print('[BLE] Device connectionState: ${await device.connectionState.first}');
+      
+      // Add timeout to service discovery (common Android BLE issue)
+      final services = await device.discoverServices().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          print('[BLE] ERROR: Service discovery timed out after 10s');
+          throw Exception('Service discovery timeout - try reconnecting');
+        },
+      );
+      print('[BLE] Found ${services.length} services');
+      
       final pneumaService = services.firstWhere(
         (s) => s.uuid == pneumaServiceUuid,
         orElse: () => throw Exception("PneumaGe service not found"),
       );
+      print('[BLE] Found PneumaGe service');
 
       // Find all characteristics
       print('[BLE] Discovering characteristics...');
@@ -186,11 +213,13 @@ class BleService {
           pneumaService, deviceInfoCharUuid, 'Device Info');
       print('[BLE] All characteristics found successfully');
 
-      // Request maximum MTU for large device info transfers
-      await _requestMtu(device);
-
       // Subscribe to notifications (including device info streaming)
+      print('[BLE] Setting up notifications...');
       await _setupNotifications();
+      print('[BLE] Notifications set up successfully');
+
+      // Brief delay for notifications to be established
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Send initial heartbeat to test command sending
       print('[BLE] Sending initial heartbeat to test command interface...');
@@ -290,12 +319,15 @@ class BleService {
     try {
       // Request maximum MTU (512 bytes is typical max)
       // Some platforms may negotiate lower
-      final mtu = await device.requestMtu(256);
+      // Request 512 instead of 256 for better throughput
+      final mtu = await device.requestMtu(512);
       print("MTU negotiated: $mtu bytes (requested 512)");
       print("Usable payload: ~${mtu - 3} bytes (after 3-byte ATT overhead)");
     } catch (e) {
       print("Warning: MTU request failed: $e");
       print("Using default MTU (23 bytes, ~20 usable)");
+      // Don't rethrow - MTU request failure is not fatal
+      // The connection will work with the default MTU
     }
   }
 
@@ -373,8 +405,11 @@ class BleService {
   }
 
   Future<void> _setupNotifications() async {
+    print('[BLE] _setupNotifications: Starting...');
+    
     // Subscribe to device info streaming (must be first to receive initial data)
     if (_deviceInfoChar != null) {
+      print('[BLE] Setting up device info notifications...');
       // Clear any previous buffer
       _deviceInfoBuffer.clear();
       
@@ -388,12 +423,14 @@ class BleService {
       _subscriptions.add(sub);
       
       // Now enable notifications - Arduino starts streaming immediately
+      print('[BLE] Enabling device info notifications...');
       await _deviceInfoChar!.setNotifyValue(true);
       print("Device info notifications enabled - waiting for stream...");
     }
 
     // Subscribe to gas concentration
     if (_gasConcentrationChar != null) {
+      print('[BLE] Setting up gas concentration notifications...');
       final sub = _gasConcentrationChar!.onValueReceived.listen((data) {
         if (data.isNotEmpty) {
           final co2 = _parseFloat32(data);
@@ -404,10 +441,12 @@ class BleService {
       });
       _subscriptions.add(sub);
       await _gasConcentrationChar!.setNotifyValue(true);
+      print('[BLE] Gas concentration notifications enabled');
     }
 
     // Subscribe to chamber stats
     if (_chamberStatsChar != null) {
+      print('[BLE] Setting up chamber stats notifications...');
       final sub = _chamberStatsChar!.onValueReceived.listen(
         (data) {
           if (data.length >= 18) {
@@ -424,10 +463,12 @@ class BleService {
       );
       _subscriptions.add(sub);
       await _chamberStatsChar!.setNotifyValue(true);
+      print('[BLE] Chamber stats notifications enabled');
     }
 
     // Subscribe to system status
     if (_systemStatusChar != null) {
+      print('[BLE] Setting up system status notifications...');
       final sub = _systemStatusChar!.onValueReceived.listen((data) {
         if (data.isNotEmpty) {
           if (!_systemStatusController.isClosed) {
@@ -437,10 +478,12 @@ class BleService {
       });
       _subscriptions.add(sub);
       await _systemStatusChar!.setNotifyValue(true);
+      print('[BLE] System status notifications enabled');
     }
 
     // Subscribe to battery level
     if (_batteryLifeChar != null) {
+      print('[BLE] Setting up battery level notifications...');
       final sub = _batteryLifeChar!.onValueReceived.listen(
         (data) {
           if (data.length >= 4) {
@@ -457,7 +500,10 @@ class BleService {
       );
       _subscriptions.add(sub);
       await _batteryLifeChar!.setNotifyValue(true);
+      print('[BLE] Battery level notifications enabled');
     }
+    
+    print('[BLE] _setupNotifications: Complete!');
   }
 
   void _startHeartbeat() {
