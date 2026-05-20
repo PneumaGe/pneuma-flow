@@ -18,8 +18,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
+import 'screens/auth_screen.dart';
 import 'screens/scan_connect_screen.dart';
 import 'screens/home_screen.dart';
 import 'models/project.dart';
@@ -109,11 +111,26 @@ class PneumageApp extends StatelessWidget {
       title: 'Pneumage',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      initialRoute: '/',
+      home: _getInitialScreen(),
       routes: {
-        '/': (context) => const ScanConnectScreen(),
+        '/auth': (context) => const AuthScreen(),
+        '/scan_connect': (context) => const ScanConnectScreen(),
         '/home': (context) => const HomeScreen(),
       },
     );
+  }
+
+  /// Determine initial screen based on auth state
+  Widget _getInitialScreen() {
+    // Check if user is already authenticated
+    final currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (currentUser != null) {
+      // User is signed in (or guest), go directly to scan/connect
+      return const ScanConnectScreen();
+    } else {
+      // No user, show auth screen
+      return const AuthScreen();
+    }
   }
 }

@@ -1,0 +1,32 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Projects folder
+    match /projects/{projectId}/measurements/{measurementId} {
+      // Helper to get project document
+      function getProject() {
+        return firestore.get(/databases/(default)/documents/projects/$(projectId));
+      }
+      
+      // Check if user is project owner or collaborator
+      function hasProjectAccess() {
+        let project = getProject();
+        return request.auth != null && (
+          project.data.ownerId == request.auth.uid ||
+          request.auth.token.email in project.data.get('collaboratorEmails', [])
+        );
+      }
+      
+      // Check if user is authenticated (non-guest)
+      function isAuthenticated() {
+        return request.auth != null && !request.auth.token.firebase.sign_in_provider == 'anonymous';
+      }
+      
+      // Read: Anyone with project access can read
+      allow read: if hasProjectAccess();
+      
+      // Write: Only authenticated (non-guest) project owners can write
+      allow write: if isAuthenticated() && getProject().data.ownerId == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated (not guest)
+    function isAuthenticated() {
+      return request.auth != null && !request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    
+    // Helper function to check if user is authenticated (including guest)
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Projects collection
+    match /projects/{projectId} {
+      // Read: Owner or collaborator can read
+      allow read: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid ||
+        request.auth.token.email in resource.data.get('collaboratorEmails', [])
+      );
+      
+      // Create: Any authenticated (non-guest) user can create
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      
+      // Update: Only owner can update
+      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      
+      // Delete: Only owner can delete
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      
+      // Measurements subcollection
+      match /measurements/{measurementId} {
+        // Read: Same access as parent project
+        allow read: if isSignedIn() && (
+          get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid ||
+          request.auth.token.email in get(/databases/$(database)/documents/projects/$(projectId)).data.get('collaboratorEmails', [])
+        );
+        
+        // Write: Same access as parent project (owner only)
+        allow write: if isAuthenticated() && 
+          get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid &&
+          request.resource.data.record_uuid is string &&
+          request.resource.data.version is string &&
+          request.resource.data.project_id is string;
+      }
+    }
+  }
+}
