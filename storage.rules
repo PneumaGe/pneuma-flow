@@ -19,7 +19,7 @@ service firebase.storage {
       
       // Check if user is authenticated (non-guest)
       function isAuthenticated() {
-        return request.auth != null && !request.auth.token.firebase.sign_in_provider == 'anonymous';
+        return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
       }
       
       // Read: Anyone with project access can read

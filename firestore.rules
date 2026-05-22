@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Helper function to check if user is authenticated (not guest)
     function isAuthenticated() {
-      return request.auth != null && !request.auth.token.firebase.sign_in_provider == 'anonymous';
+      return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
     }
     
     // Helper function to check if user is authenticated (including guest)

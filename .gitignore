@@ -106,3 +106,10 @@ REQUIREMENTS.md
 # Local configuration files (contain secrets)
 lib/config/mapbox_config_local.dart
 **/android/local.properties
+
+# Firebase related
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc
