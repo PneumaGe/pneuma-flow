@@ -14,6 +14,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pneumage_app/config/schema_version.dart';
+import 'package:pneumage_app/models/app_settings.dart';
 import 'package:pneumage_app/models/measurement.dart';
 
 void main() {
@@ -397,6 +398,145 @@ void main() {
         expect(() => _validateRestoredRecordStandalone(record), returnsNormally);
       });
     });
+
+    group('validateUserProfile (pre-sync)', () {
+      test('complete profile passes validation', () {
+        final settings = AppSettings(
+          creatorName: 'Dr. Jane Smith',
+          operatorId: 'jsmith@example.com',
+          organization: 'Research University',
+        );
+
+        // Should not throw
+        expect(() => _validateUserProfileStandalone(settings), returnsNormally);
+      });
+
+      test('profile without organization passes (organization is optional)', () {
+        final settings = AppSettings(
+          creatorName: 'Dr. Jane Smith',
+          operatorId: 'jsmith@example.com',
+          organization: '',
+        );
+
+        // Should not throw (organization is optional)
+        expect(() => _validateUserProfileStandalone(settings), returnsNormally);
+      });
+
+      test('throws on missing creatorName', () {
+        final settings = AppSettings(
+          creatorName: '',
+          operatorId: 'jsmith@example.com',
+          organization: 'Research University',
+        );
+
+        expect(
+          () => _validateUserProfileStandalone(settings),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('User profile incomplete'),
+                contains('Creator Name'),
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('throws on missing operatorId', () {
+        final settings = AppSettings(
+          creatorName: 'Dr. Jane Smith',
+          operatorId: '',
+          organization: 'Research University',
+        );
+
+        expect(
+          () => _validateUserProfileStandalone(settings),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('User profile incomplete'),
+                contains('Operator ID'),
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('throws on both creatorName and operatorId missing', () {
+        final settings = AppSettings(
+          creatorName: '',
+          operatorId: '',
+          organization: 'Research University',
+        );
+
+        expect(
+          () => _validateUserProfileStandalone(settings),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              allOf(
+                contains('User profile incomplete'),
+                contains('Creator Name'),
+                contains('Operator ID'),
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('throws on whitespace-only creatorName', () {
+        final settings = AppSettings(
+          creatorName: '   ',
+          operatorId: 'jsmith@example.com',
+          organization: 'Research University',
+        );
+
+        expect(
+          () => _validateUserProfileStandalone(settings),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('Creator Name'),
+            ),
+          ),
+        );
+      });
+
+      test('throws on whitespace-only operatorId', () {
+        final settings = AppSettings(
+          creatorName: 'Dr. Jane Smith',
+          operatorId: '  \t  ',
+          organization: 'Research University',
+        );
+
+        expect(
+          () => _validateUserProfileStandalone(settings),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('Operator ID'),
+            ),
+          ),
+        );
+      });
+
+      test('minimal valid profile with just required fields', () {
+        final settings = AppSettings(
+          creatorName: 'J. Smith',
+          operatorId: 'js',
+        );
+
+        // Should not throw
+        expect(() => _validateUserProfileStandalone(settings), returnsNormally);
+      });
+    });
   });
 }
 
@@ -480,5 +620,25 @@ void _validateRestoredRecordStandalone(PneumaGeRecord record) {
     if (channel.rawData.samples.isEmpty) {
       throw StateError('Channel ${channel.targetGas} has no data');
     }
+  }
+}
+
+/// Standalone validation for user profile (mirrors SyncService.validateUserProfile)
+void _validateUserProfileStandalone(AppSettings settings) {
+  final missingFields = <String>[];
+  
+  if (settings.creatorName.trim().isEmpty) {
+    missingFields.add('Creator Name');
+  }
+  
+  if (settings.operatorId.trim().isEmpty) {
+    missingFields.add('Operator ID');
+  }
+  
+  if (missingFields.isNotEmpty) {
+    throw StateError(
+      'User profile incomplete. Please complete the following fields in '
+      'Settings > User Profile: ${missingFields.join(', ')}'
+    );
   }
 }

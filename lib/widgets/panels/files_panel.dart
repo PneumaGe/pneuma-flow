@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_theme.dart';
 import '../../models/project.dart';
 import '../../providers/project_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../config/domain_config.dart';
 import '../collaborator_manager.dart';
 import '../project_collaborators_dialog.dart';
@@ -212,7 +213,119 @@ class _FilesPanelState extends ConsumerState<FilesPanel> {
     );
   }
 
-  void _syncProject(Project project) {
+  void _syncProject(Project project) async {
+    // Check if user profile is complete before syncing
+    final appSettingsAsync = await ref.read(appSettingsProvider.future);
+    
+    final missingFields = <String>[];
+    if (appSettingsAsync.creatorName.trim().isEmpty) {
+      missingFields.add('Creator Name');
+    }
+    if (appSettingsAsync.operatorId.trim().isEmpty) {
+      missingFields.add('Operator ID');
+    }
+    
+    if (missingFields.isNotEmpty && mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.warning_outlined,
+                color: AppTheme.danger,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Profile Incomplete',
+                style: TextStyle(
+                  fontFamily: 'RobotoMono',
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Please complete your user profile before syncing projects to the cloud.',
+                style: TextStyle(
+                  fontFamily: 'RobotoMono',
+                  fontSize: 11,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Missing fields:',
+                style: TextStyle(
+                  fontFamily: 'RobotoMono',
+                  fontSize: 10,
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              ...missingFields.map((field) => Padding(
+                padding: const EdgeInsets.only(left: 8, top: 2),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.circle,
+                      size: 6,
+                      color: AppTheme.danger,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      field,
+                      style: TextStyle(
+                        fontFamily: 'RobotoMono',
+                        fontSize: 10,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+              const SizedBox(height: 12),
+              Text(
+                'Go to Settings > User Profile to complete your profile.',
+                style: TextStyle(
+                  fontFamily: 'RobotoMono',
+                  fontSize: 10,
+                  color: AppTheme.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  fontFamily: 'RobotoMono',
+                  fontSize: 10,
+                  color: AppTheme.accent,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
     // Placeholder — will call SyncService.syncProject()
     ref.read(projectsNotifierProvider.notifier).updateProject(
       project.copyWith(

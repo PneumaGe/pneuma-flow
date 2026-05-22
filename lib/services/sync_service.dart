@@ -18,6 +18,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import '../config/schema_version.dart';
+import '../models/app_settings.dart';
 import '../models/measurement.dart';
 import '../models/project.dart';
 
@@ -50,6 +51,32 @@ class SyncService {
 
   Reference _samplesBucket(String projectId, String measurementId) =>
       _storage.ref('projects/$projectId/measurements/$measurementId.json');
+
+  // ---------------------------------------------------------------------------
+  // Validation
+  // ---------------------------------------------------------------------------
+
+  /// Validate that user profile is complete before syncing.
+  ///
+  /// Throws [StateError] if required profile fields are missing.
+  void validateUserProfile(AppSettings settings) {
+    final missingFields = <String>[];
+    
+    if (settings.creatorName.trim().isEmpty) {
+      missingFields.add('Creator Name');
+    }
+    
+    if (settings.operatorId.trim().isEmpty) {
+      missingFields.add('Operator ID');
+    }
+    
+    if (missingFields.isNotEmpty) {
+      throw StateError(
+        'User profile incomplete. Please complete the following fields in '
+        'Settings > User Profile: ${missingFields.join(', ')}'
+      );
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Sync (upload)
