@@ -79,6 +79,7 @@ class ProjectsNotifier extends StateNotifier<AsyncValue<List<Project>>> {
     required String name,
     required String ownerId,
     String filenamePrefix = 'PG',
+    List<String> collaboratorEmails = const [],
     String domain = 'NONE',
     Map<String, dynamic> domainMetadata = const {},
   }) async {
@@ -87,6 +88,7 @@ class ProjectsNotifier extends StateNotifier<AsyncValue<List<Project>>> {
         name: name,
         ownerId: ownerId,
         filenamePrefix: filenamePrefix,
+        collaboratorEmails: collaboratorEmails,
         domain: domain,
         domainMetadata: domainMetadata,
       );

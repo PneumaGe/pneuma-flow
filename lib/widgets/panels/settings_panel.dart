@@ -138,8 +138,6 @@ class _AppSettingsTabState extends ConsumerState<_AppSettingsTab> {
     'Temperature': false,
     'Pressure': false,
   };
-  final List<String> _collaborators = [];
-  final _emailController = TextEditingController();
   bool _isLoading = true;
 
   @override
@@ -173,7 +171,6 @@ class _AppSettingsTabState extends ConsumerState<_AppSettingsTab> {
 
   @override
   void dispose() {
-    _emailController.dispose();
     super.dispose();
   }
 
@@ -293,81 +290,6 @@ class _AppSettingsTabState extends ConsumerState<_AppSettingsTab> {
                 color: AppTheme.textSecondary,
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Collaborators
-        Text('Collaborators', style: labelStyle),
-        const SizedBox(height: 4),
-        if (_collaborators.isEmpty)
-          Text('No collaborators added', style: labelStyle.copyWith(fontStyle: FontStyle.italic)),
-        ..._collaborators.map((email) => Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: Row(
-            children: [
-              Expanded(child: Text(email, style: valueStyle)),
-              GestureDetector(
-                onTap: () => setState(() => _collaborators.remove(email)),
-                child: const Icon(Icons.close, size: 12, color: AppTheme.danger),
-              ),
-            ],
-          ),
-        )),
-        const SizedBox(height: 6),
-        SizedBox(
-          height: 28,
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _emailController,
-                  style: valueStyle,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    border: OutlineInputBorder(
-                      borderSide: const BorderSide(color: AppTheme.divider),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: AppTheme.divider),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: const BorderSide(color: AppTheme.accent),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    hintText: 'email@example.com',
-                    hintStyle: TextStyle(
-                      fontFamily: 'RobotoMono',
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () {
-                  if (_emailController.text.isNotEmpty) {
-                    setState(() {
-                      _collaborators.add(_emailController.text);
-                      _emailController.clear();
-                    });
-                  }
-                },
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  child: const Icon(Icons.add, size: 14, color: Colors.white),
-                ),
-              ),
-            ],
           ),
         ),
       ],

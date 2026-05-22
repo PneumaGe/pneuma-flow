@@ -18,6 +18,8 @@ import '../../theme/app_theme.dart';
 import '../../models/project.dart';
 import '../../providers/project_provider.dart';
 import '../../config/domain_config.dart';
+import '../collaborator_manager.dart';
+import '../project_collaborators_dialog.dart';
 
 // Import selectedMeasurementIdProvider for measurement selection
 // (imported from project_provider.dart above)
@@ -124,6 +126,7 @@ class _FilesPanelState extends ConsumerState<FilesPanel> {
                         onSync: () => _syncProject(project),
                         onArchive: () => _archiveProject(project),
                         onRestore: () => _restoreProject(project),
+                        onManageCollaborators: () => _manageCollaborators(project),
                         files: selected && project.syncStatus != SyncStatus.archived
                             ? _buildFileList(project, subtitleStyle)
                             : null,
@@ -242,6 +245,23 @@ class _FilesPanelState extends ConsumerState<FilesPanel> {
       ),
     );
   }
+
+  void _manageCollaborators(Project project) {
+    showDialog(
+      context: context,
+      builder: (context) => ProjectCollaboratorsDialog(
+        project: project,
+        onSave: (collaborators) async {
+          // Update project with new collaborators
+          final updatedProject = project.copyWith(
+            collaboratorEmails: collaborators,
+            syncStatus: SyncStatus.local, // Mark as local to trigger sync
+          );
+          await ref.read(projectsNotifierProvider.notifier).updateProject(updatedProject);
+        },
+      ),
+    );
+  }
 }
 
 class _ProjectTile extends StatelessWidget {
@@ -253,6 +273,7 @@ class _ProjectTile extends StatelessWidget {
   final VoidCallback onSync;
   final VoidCallback onArchive;
   final VoidCallback onRestore;
+  final VoidCallback onManageCollaborators;
   final Widget? files;
 
   const _ProjectTile({
@@ -264,6 +285,7 @@ class _ProjectTile extends StatelessWidget {
     required this.onSync,
     required this.onArchive,
     required this.onRestore,
+    required this.onManageCollaborators,
     this.files,
   });
 
@@ -377,7 +399,20 @@ class _ProjectTile extends StatelessWidget {
               ),
 
               // Action buttons
-              _buildActions(),
+              Row(
+                children: [
+                  // Collaborators button (always visible when not loading)
+                  if (project.syncStatus != SyncStatus.syncing &&
+                      project.syncStatus != SyncStatus.restoring)
+                    _ActionButton(
+                      icon: Icons.people_outline,
+                      tooltip: 'Manage collaborators',
+                      onTap: onManageCollaborators,
+                    ),
+                  // Sync/Archive/Restore button
+                  _buildActions(),
+                ],
+              ),
 
               // Expand/collapse indicator (only for non-archived)
               if (!isArchived)
@@ -527,6 +562,7 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
   final _prefixController = TextEditingController(text: 'PG');
   String _selectedDomain = DomainConfig.none;
   final Map<String, TextEditingController> _domainFieldControllers = {};
+  List<String> _collaborators = [];
   bool _isCreating = false;
 
   @override
@@ -697,6 +733,18 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
                   ),
                 );
               }).toList(),
+            ),
+            
+            // Collaborators
+            const SizedBox(height: 8),
+            CollaboratorManager(
+              collaborators: _collaborators,
+              onChanged: (collaborators) {
+                setState(() {
+                  _collaborators = collaborators;
+                });
+              },
+              enabled: !_isCreating,
             ),
             
             // Domain-specific fields
@@ -881,6 +929,7 @@ class _CreateProjectBottomSheetState extends State<_CreateProjectBottomSheet> {
         name: name,
         ownerId: 'user1', // TODO: Replace with actual user ID from auth
         filenamePrefix: prefix.isEmpty ? 'PG' : prefix,
+        collaboratorEmails: _collaborators,
         domain: _selectedDomain,
         domainMetadata: domainMetadata,
       );

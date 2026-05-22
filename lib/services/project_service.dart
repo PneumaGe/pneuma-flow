@@ -245,6 +245,7 @@ class ProjectService {
     required String name,
     required String ownerId,
     String filenamePrefix = 'PG',
+    List<String> collaboratorEmails = const [],
     String domain = 'NONE',
     Map<String, dynamic> domainMetadata = const {},
   }) async {
@@ -254,6 +255,7 @@ class ProjectService {
       ownerId: ownerId,
       filenamePrefix: filenamePrefix,
       createdAt: DateTime.now(),
+      collaboratorEmails: collaboratorEmails,
       domain: domain,
       domainMetadata: domainMetadata,
     );
